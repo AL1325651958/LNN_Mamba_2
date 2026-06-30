@@ -42,58 +42,112 @@ class WindDatasetV2(Dataset):
         return x, y, ts, last_power
 
 
-def load_wind_data(site='Wind_farm_site_2_200MW', data_dir='data/wind',
-                   seq_len=96, pred_len=96, batch_size=16, stride=3,
-                   train_ratio=0.7, val_ratio=0.1):
-    """Load CSV, compute enhanced time features, split, create loaders."""
+def load_multi_site_data(data_dir='data/wind',
+                         seq_len=96, pred_len=96, batch_size=16, stride=3,
+                         train_ratio=0.7, val_ratio=0.1):
+    """Load ALL 6 wind farm sites with column alignment, create loaders."""
     import glob
-    files = sorted(glob.glob(os.path.join(data_dir, f'{site}*.csv')))
-    dfs = [pd.read_csv(f) for f in files]
-    df = pd.concat(dfs, ignore_index=True)
 
-    time_col = df.columns[0]
-    df[time_col] = pd.to_datetime(df[time_col])
-    df = df.sort_values(time_col).reset_index(drop=True)
+    SITES = [
+        'Wind_farm_site_1_99MW',
+        'Wind_farm_site_2_200MW',
+        'Wind_farm_site_3_99MW',
+        'Wind_farm_site_4_66MW',
+        'Wind_farm_site_5_36MW',
+        'Wind_farm_site_6_96MW',
+    ]
 
-    val_cols = [c for c in df.columns if c != time_col]
-    feature_cols = val_cols[:-1]
-    power_col = val_cols[-1]
-    print(f'Features: {len(feature_cols)}, target: {power_col}')
+    # Load each site, align columns
+    all_data = []  # list of (data_array, time_feat_array)
+    for site in SITES:
+        files = sorted(glob.glob(os.path.join(data_dir, f'{site}*.csv')))
+        if not files:
+            print(f'  WARNING: no files for {site}')
+            continue
+        dfs = [pd.read_csv(f) for f in files]
+        df = pd.concat(dfs, ignore_index=True)
 
-    # Enhanced time features
-    h = df[time_col].dt.hour.values.astype(np.float32)
-    dow = df[time_col].dt.dayofweek.values.astype(np.float32)
-    mo = (df[time_col].dt.month - 1).values.astype(np.float32)
-    season = (df[time_col].dt.month % 12 // 3).values.astype(np.float32)
-    rel_pos = np.arange(len(df), dtype=np.float32) / len(df)
-    time_feat = np.stack([h, dow, mo, season, rel_pos], axis=1)  # (T, 5)
+        time_col = df.columns[0]
+        df[time_col] = pd.to_datetime(df[time_col])
+        df = df.sort_values(time_col).reset_index(drop=True)
 
-    # Scale
-    scaler_x = StandardScaler()
-    features = scaler_x.fit_transform(df[feature_cols].values.astype(np.float32))
-    scaler_p = StandardScaler()
-    power = scaler_p.fit_transform(df[power_col].values.astype(np.float32).reshape(-1, 1))
+        # Find Power column by name
+        power_col = [c for c in df.columns if 'Power' in c or 'power' in c][0]
 
-    data = np.concatenate([features, power], axis=1)
-    n_vars = data.shape[1]
+        # Feature columns: strip whitespace, exclude Time and Power
+        feature_cols = []
+        for c in df.columns:
+            c_stripped = c.strip()
+            if 'Time' not in c_stripped and 'Power' not in c and 'power' not in c:
+                feature_cols.append(c)
 
-    # Split
-    T = len(data)
+        print(f'  {site}: {len(df)} rows, {len(feature_cols)} features')
+
+        # Time features
+        h = df[time_col].dt.hour.values.astype(np.float32)
+        dow = df[time_col].dt.dayofweek.values.astype(np.float32)
+        mo = (df[time_col].dt.month - 1).values.astype(np.float32)
+        season = (df[time_col].dt.month % 12 // 3).values.astype(np.float32)
+        rel_pos = np.arange(len(df), dtype=np.float32) / len(df)
+        time_feat_arr = np.stack([h, dow, mo, season, rel_pos], axis=1)
+
+        features = StandardScaler().fit_transform(
+            df[feature_cols].values.astype(np.float32))
+        scaler_p_local = StandardScaler()
+        power = scaler_p_local.fit_transform(
+            df[power_col].values.astype(np.float32).reshape(-1, 1))
+
+        data_arr = np.concatenate([features, power], axis=1)
+        all_data.append((data_arr, time_feat_arr))
+
+    # Pad to uniform feature count
+    max_vars = max(d.shape[1] for d, _ in all_data)
+    print(f'  Max vars: {max_vars}')
+
+    padded_data = []
+    padded_time = []
+    for data_arr, time_arr in all_data:
+        n_v = data_arr.shape[1]
+        if n_v < max_vars:
+            pad = np.zeros((len(data_arr), max_vars - n_v), dtype=np.float32)
+            data_arr = np.concatenate([data_arr, pad], axis=1)
+        padded_data.append(data_arr)
+        padded_time.append(time_arr)
+
+    # Concatenate all sites and sort by time proxy (already sorted within each site,
+    # but sites overlap in time — shuffle interleaving for training diversity)
+    data_all = np.concatenate(padded_data, axis=0)
+    time_all = np.concatenate(padded_time, axis=0)
+
+    # Shuffle to mix sites (avoids site ordering bias)
+    rng = np.random.RandomState(42)
+    idx = rng.permutation(len(data_all))
+    data_all = data_all[idx]
+    time_all = time_all[idx]
+
+    print(f'  Total rows (all farms): {len(data_all)}')
+
+    # Split by index (time-shuffled, but we mix farms)
+    T = len(data_all)
     te = int(T * train_ratio)
     ve = te + int(T * val_ratio)
 
-    ds_train = WindDatasetV2(data[:te], time_feat[:te], seq_len, pred_len, stride)
-    ds_val   = WindDatasetV2(data[te:ve], time_feat[te:ve], seq_len, pred_len, stride)
-    ds_test  = WindDatasetV2(data[ve:], time_feat[ve:], seq_len, pred_len, stride)
+    ds_train = WindDatasetV2(data_all[:te], time_all[:te], seq_len, pred_len, stride)
+    ds_val   = WindDatasetV2(data_all[te:ve], time_all[te:ve], seq_len, pred_len, stride)
+    ds_test  = WindDatasetV2(data_all[ve:], time_all[ve:], seq_len, pred_len, stride)
 
-    print(f'Split: train={len(ds_train)}, val={len(ds_val)}, test={len(ds_test)}')
-    print(f'Train batches: {len(ds_train)//batch_size}')
+    print(f'  Samples: train={len(ds_train)}, val={len(ds_val)}, test={len(ds_test)}')
+    print(f'  Train batches: {len(ds_train)//batch_size}')
+
+    # For inverse-transform, use a dummy scaler_p (per-site differs, so skip transform in eval)
+    # We'll store the individual scalers if needed
+    scaler_p = None  # multi-site: evaluate in standardized space
 
     dl_train = DataLoader(ds_train, batch_size=batch_size, shuffle=True,  num_workers=0, pin_memory=True)
     dl_val   = DataLoader(ds_val,   batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
     dl_test  = DataLoader(ds_test,  batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
 
-    return dl_train, dl_val, dl_test, scaler_p, n_vars, power_col
+    return dl_train, dl_val, dl_test, scaler_p, max_vars, 'Power (MW)'
 
 
 # ═══════════════════════════════════════════════════════════
@@ -166,19 +220,22 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Device: {device}')
 
-    # Load data
-    tl, vl, testl, scaler_p, n_vars, pname = load_wind_data(
+    # Load data — ALL 6 wind farms
+    tl, vl, testl, scaler_p, n_vars, pname = load_multi_site_data(
         seq_len=args.seq_len, pred_len=args.pred_len,
         batch_size=args.batch_size, stride=args.stride,
         train_ratio=args.train_ratio,
     )
+
+    # Average rated capacity across 6 farms: (99+200+99+66+36+96)/6 ≈ 99 MW
+    AVG_CAPACITY = 99.0
 
     # Build model
     model = LNNMambaTransformerV2(
         n_vars=n_vars, d_model=args.d_model,
         n_mamba_blocks=args.n_mamba, n_transformer_layers=args.n_tf,
         d_state=args.d_state, n_heads=8, pred_len=args.pred_len,
-        lnn_hidden=64, dropout=0.1, rated_capacity=200.0,
+        lnn_hidden=64, dropout=0.1, rated_capacity=AVG_CAPACITY,
     ).to(device)
     n_p = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f'Params: {n_p:,}')

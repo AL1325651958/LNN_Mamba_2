@@ -1,7 +1,11 @@
 # Large data
 data/solar/
 data/wind/
+data/gefcom2014/
+data/gefcom2017/
 17304221/
+GEFCom2014/
+GEFCom2017/
 
 # Checkpoints
 checkpoints/

@@ -438,9 +438,12 @@ class LNNMambaTransformerV2(nn.Module):
         # ── Absolute prediction auxiliary loss ──
         loss_abs = F.mse_loss(pred_abs, target) * 0.3
 
+        # ── Spectral consistency loss (fix high-freq suppression) ──
+        loss_spectral = self._spectral_loss(pred, target)
+
         # ── Total ──
         total_loss = (loss_main + loss_regime_weighted + loss_delta +
-                      loss_regime + loss_abs)
+                      loss_regime + loss_abs + loss_spectral)
 
         with torch.no_grad():
             rmse = torch.sqrt(F.mse_loss(pred, target))
@@ -452,6 +455,51 @@ class LNNMambaTransformerV2(nn.Module):
             'loss_delta': loss_delta,
             'loss_regime_cls': loss_regime,
             'loss_abs': loss_abs,
+            'loss_spectral': loss_spectral,
             'rmse': rmse,
             'mean_weight': weight.mean(),
         }
+
+    def _spectral_loss(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        """
+        Frequency-domain consistency loss.
+        Forces prediction magnitude spectrum to match target.
+
+        Uses weighted bands:
+          - DC + very low (trend):   weight = 0.5
+          - Diurnal/semi-diurnal:    weight = 2.0  (combat 70% suppression)
+          - Mid-freq (2-6h):         weight = 1.5
+          - High-freq (<2h):         weight = 1.0
+        """
+        B, P = pred.shape
+
+        # Real FFT along time axis
+        pred_fft  = torch.fft.rfft(pred,  dim=-1, norm='ortho')
+        targ_fft  = torch.fft.rfft(target, dim=-1, norm='ortho')
+
+        # Magnitude spectrum
+        pred_mag  = torch.abs(pred_fft)
+        targ_mag  = torch.abs(targ_fft)
+
+        # Per-frequency weight: boost mid/high frequencies
+        n_freq = pred_mag.shape[-1]
+        freq_weight = torch.ones(n_freq, device=pred.device)
+
+        # Frequency bins for 15-min data, P=96 → 49 bins
+        # bin 0: DC, bin 1: 24h, bin 2: 12h, bin 4: 6h, bin 8: 3h, bin 16: 1.5h
+        # Daily cycle region (bin 1-4, periods 24h→4.8h): weight=2.0
+        if n_freq > 4:
+            freq_weight[1:5] = 2.0
+        # Mid-freq (bin 5-12, periods 4.8h→1.8h): weight=1.5
+        if n_freq > 12:
+            freq_weight[5:13] = 1.5
+        # DC weight lower (bias doesn't need spectral matching)
+        freq_weight[0] = 0.5
+
+        freq_weight = freq_weight.unsqueeze(0)  # (1, n_freq)
+
+        # Weighted L1 loss on magnitude spectrum (more robust than L2)
+        mag_diff = torch.abs(pred_mag - targ_mag)
+        loss_spec = (mag_diff * freq_weight).mean()
+
+        return loss_spec * 0.3  # scaling factor

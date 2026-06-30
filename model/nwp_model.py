@@ -21,7 +21,6 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib; matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 DATA_DIR = 'data/gefcom2014'
 QUANTILES = np.linspace(0.01, 0.99, 99)
 

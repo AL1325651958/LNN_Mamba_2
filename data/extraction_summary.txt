@@ -1,0 +1,20 @@
+Non-Zero Continuous Segment Extraction Summary
+============================================================
+
+Total CSV files exported: 38
+Total data points exported: 638366
+
+Solar station site 1 (Nominal capacity-50MW).xlsx: 34910 original nonzero pts (8728h), 2 merged segs -> 2 exported, 34910 clean pts (8728h, 100%), 34961 zeros filtered
+Solar station site 2 (Nominal capacity-130MW).xlsx: 70058 original nonzero pts (17514h), 1 merged segs -> 1 exported, 70058 clean pts (17514h, 100%), 118 zeros filtered
+Solar station site 3 (Nominal capacity-30MW).xlsx: 10489 original nonzero pts (2622h), 3 merged segs -> 3 exported, 10489 clean pts (2622h, 100%), 9504 zeros filtered
+Solar station site 4 (Nominal capacity-130MW).xlsx: 35353 original nonzero pts (8838h), 4 merged segs -> 4 exported, 35353 clean pts (8838h, 100%), 34199 zeros filtered
+Solar station site 5 (Nominal capacity-110MW).xlsx: 33500 original nonzero pts (8375h), 3 merged segs -> 3 exported, 33500 clean pts (8375h, 100%), 36188 zeros filtered
+Solar station site 6 (Nominal capacity-35MW).xlsx: 34337 original nonzero pts (8584h), 3 merged segs -> 3 exported, 34337 clean pts (8584h, 100%), 35401 zeros filtered
+Solar station site 7 (Nominal capacity-30MW).xlsx: 32323 original nonzero pts (8081h), 5 merged segs -> 5 exported, 32323 clean pts (8081h, 100%), 35002 zeros filtered
+Solar station site 8 (Nominal capacity-30MW).xlsx: 34080 original nonzero pts (8520h), 1 merged segs -> 1 exported, 34080 clean pts (8520h, 100%), 35271 zeros filtered
+Wind farm site 1 (Nominal capacity-99MW).xlsx: 69970 original nonzero pts (17492h), 2 merged segs -> 2 exported, 69970 clean pts (17492h, 100%), 47 zeros filtered
+Wind farm site 2 (Nominal capacity-200MW).xlsx: 62494 original nonzero pts (15624h), 1 merged segs -> 1 exported, 62494 clean pts (15624h, 100%), 7682 zeros filtered
+Wind farm site 3 (Nominal capacity-99MW).xlsx: 56409 original nonzero pts (14102h), 3 merged segs -> 3 exported, 56409 clean pts (14102h, 100%), 12846 zeros filtered
+Wind farm site 4 (Nominal capacity-66MW).xlsx: 56359 original nonzero pts (14090h), 4 merged segs -> 4 exported, 56359 clean pts (14090h, 100%), 11940 zeros filtered
+Wind farm site 5 (Nominal capacity-36MW).xlsx: 48255 original nonzero pts (12064h), 2 merged segs -> 2 exported, 48255 clean pts (12064h, 100%), 21332 zeros filtered
+Wind farm site 6 (Nominal capacity-96MW).xlsx: 59833 original nonzero pts (14958h), 5 merged segs -> 4 exported, 59829 clean pts (14957h, 100%), 7585 zeros filtered

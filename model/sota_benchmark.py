@@ -638,10 +638,16 @@ class TimeMixer(nn.Module):
 
     def _decompose(self, x):
         """Decompose into seasonal & trend via moving average."""
-        kernel = max(3, x.shape[1] // 12)
+        # x: (B, L, d)
+        L = x.shape[1]
+        kernel = max(3, L // 12)
+        if kernel % 2 == 0:
+            kernel += 1  # ensure odd for symmetric padding
         pad = kernel // 2
-        x_pad = F.pad(x.transpose(1, 2), (pad, pad), mode='reflect').transpose(1, 2)
-        avg = F.avg_pool1d(x_pad.transpose(1, 2), kernel, 1).transpose(1, 2)  # (B, L, d)
+        # Use AvgPool1d for exact length preservation
+        avg = F.avg_pool1d(
+            x.transpose(1, 2), kernel_size=kernel, stride=1, padding=pad
+        ).transpose(1, 2)  # (B, L, d)
         return x - avg, avg  # seasonal, trend
 
     def forward(self, x):
@@ -735,14 +741,11 @@ class Crossformer(nn.Module):
         flat = patches.permute(0, 2, 1, 3).reshape(B2 * N2, V2, D2)  # (B*n_patches, V, d)
         cross_out, _ = self.cross_attn(flat, flat, flat)
         cross_out = self.cross_norm(cross_out + flat)
-        patches = cross_out.reshape(B2, N2, V2, D2).permute(0, 2, 1, 3).reshape(B2, V2 * N2, D2)
+        patches = cross_out.reshape(B2, N2, V2, D2).permute(0, 2, 1, 3)  # (B, V, n_patches, d)
 
-        # Global pooling and decode
-        out = patches.mean(dim=1)  # (B, d)
-        out = patches.reshape(B, -1)  # (B, V*n_patches*d)
-        # Use mean pooling instead
-        pooled = patches.reshape(B, V2, N2, D2).mean(dim=1).mean(dim=1)  # (B, D2)
-        out = patches.reshape(B, V2 * N2, D2).mean(dim=1)  # (B, D2)
+        # Flatten: mean pool across variables, flatten patches
+        out = patches.mean(dim=1)  # (B, n_patches, d)
+        out = out.reshape(B, N2 * D2)  # (B, n_patches*d)
         return self.head(out).view(B, self.pred_len, self.nq)
 
 

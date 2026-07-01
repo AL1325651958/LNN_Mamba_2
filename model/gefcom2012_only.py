@@ -118,7 +118,7 @@ def build_farm_data(fid, stride=4):
 
     print(f'  Farm {fid}: {len(data)} hours, {feats_arr.shape[1]} features, '
           f'{pw.dt.iloc[valid_idx[0]]}~{pw.dt.iloc[valid_idx[-1]]}')
-    return data, feats_arr.shape[1]
+    return data  # return numpy array; use data.shape[1] for n_vars
 
 
 class WDS(Dataset):
@@ -132,6 +132,66 @@ class WDS(Dataset):
 
 
 from nwp_model import NWPMamba, pinball_loss
+
+
+def compute_picp_pinaw(predictions, targets, quantiles, intervals=None):
+    """Compute PICP and PINAW for given prediction intervals.
+
+    PICP (Prediction Interval Coverage Probability):
+        Fraction of actual values falling within the prediction interval.
+        Should be ≈ nominal coverage (e.g. ~0.90 for a 90% PI).
+
+    PINAW (Prediction Interval Normalized Average Width):
+        Mean interval width ÷ target range. Lower is better,
+        but only meaningful when PICP meets the nominal level.
+
+    Args:
+        predictions: (N, H, Q) — quantile predictions
+        targets:     (N, H) — actual values
+        quantiles:   (Q,) — quantile levels
+        intervals:   dict {label: (nominal, lo_q, hi_q)} or None for defaults
+
+    Returns:
+        dict: {label: {'nominal', 'picp', 'picp_per_h', 'pinaw', 'pinaw_per_h'}}
+    """
+    if intervals is None:
+        intervals = {
+            '80%': (0.80, 0.10, 0.90),
+            '90%': (0.90, 0.05, 0.95),
+            '95%': (0.95, 0.025, 0.975),
+        }
+
+    results = {}
+    y_min = float(targets.min())
+    y_max = float(targets.max())
+    y_range = y_max - y_min
+
+    for label, (nominal, lo_q, hi_q) in intervals.items():
+        lo_idx = int(np.argmin(np.abs(quantiles - lo_q)))
+        hi_idx = int(np.argmin(np.abs(quantiles - hi_q)))
+
+        lo = predictions[:, :, lo_idx]  # (N, H)
+        hi = predictions[:, :, hi_idx]  # (N, H)
+
+        # PICP
+        covered = (targets >= lo) & (targets <= hi)
+        picp = float(covered.mean())
+        picp_per_h = covered.mean(axis=0)  # (H,)
+
+        # PINAW
+        widths = hi - lo
+        pinaw = float(widths.mean() / y_range)
+        pinaw_per_h = widths.mean(axis=0) / y_range  # (H,)
+
+        results[label] = {
+            'nominal': nominal,
+            'picp': picp,
+            'picp_per_h': picp_per_h,
+            'pinaw': pinaw,
+            'pinaw_per_h': pinaw_per_h,
+        }
+
+    return results
 
 
 def main():
@@ -223,6 +283,22 @@ def main():
         er = torch.FloatTensor(tr[:, h]).unsqueeze(-1) - torch.FloatTensor(pr[:, h, :])
         pb_h = torch.maximum(torch.FloatTensor(QUANTILES)*er, (torch.FloatTensor(QUANTILES)-1)*er).mean().item()
         print(f'    +{h+1:2d}h: {pb_h:.4f}')
+
+    # PICP / PINAW
+    pi_results = compute_picp_pinaw(pr, tr, QUANTILES)
+    print(f'\n  Prediction Interval Metrics:')
+    header = f'  {"PI":>6s}  {"Nominal":>8s}  {"PICP":>8s}  {"PINAW":>8s}  {"ACE":>8s}'
+    print(header)
+    print('  ' + '-' * (len(header) - 2))
+    for label, r in pi_results.items():
+        ace = r['picp'] - r['nominal']  # Average Coverage Error
+        print(f'  {label:>6s}  {r["nominal"]:>8.3f}  {r["picp"]:>8.4f}  {r["pinaw"]:>8.4f}  {ace:>+8.4f}')
+
+    # Per-horizon PICP/PINAW for 90% PI
+    r90 = pi_results['90%']
+    print(f'\n  Per-horizon 90% PI (PICP / PINAW):')
+    for h in [0, 3, 5, 11, 17, 23]:
+        print(f'    +{h+1:2d}h: PICP={r90["picp_per_h"][h]:.4f}  PINAW={r90["pinaw_per_h"][h]:.4f}')
 
     print(f'\n  === COMPARISON ===')
     print(f'  GEFCom2014 v1 (Zone 1, 3.5K, no cross-farm): Pinball=0.2069')

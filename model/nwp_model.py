@@ -153,17 +153,21 @@ class QuantileDecoder(nn.Module):
         return self.net(x).view(-1, self.pred, self.nq)
 
 class NWPMamba(nn.Module):
-    """LNN-Mamba with NWP weather features for probabilistic WPF."""
+    """LNN-Mamba with RevIN + NWP weather features for probabilistic WPF."""
     def __init__(self, V, d=64, nb=2, ds=16, pred=24, nq=99, use_lnn=True):
         super().__init__()
         self.use_lnn = use_lnn
+        self.pred_len = pred
+        self.nq = nq
         self.emb = nn.Sequential(nn.Linear(V, d*2), nn.GELU(), nn.Linear(d*2, d))
         self.pe  = nn.Parameter(torch.randn(1,2000,d)*0.02)
         self.mb  = nn.ModuleList([MambaSSM(d,ds) for _ in range(nb)])
         self.gates = nn.ModuleList([nn.Sequential(
-            nn.GRU(d,32,batch_first=True), nn.Linear(32,d)) for _ in range(nb)])
+            nn.GRU(d,48,batch_first=True), nn.Linear(48,d)) for _ in range(nb)])
         self.dec = QuantileDecoder(d, pred, nq)
         self.drop = nn.Dropout(0.1)
+        # RevIN: per-variable normalization across time, stored in forward
+        self.register_buffer('rev_eps', torch.tensor(1e-5))
         self._init()
 
     def _init(self):
@@ -173,14 +177,32 @@ class NWPMamba(nn.Module):
                 if m.bias is not None: nn.init.zeros_(m.bias)
 
     def forward(self, x):
-        B,V,L = x.shape
-        x = self.emb(x.transpose(1,2)) + self.pe[:,:L]
+        B, V, L = x.shape
+
+        # Partial RevIN: only normalize target variable (power), keep NWP features as-is
+        # NWP features have physical meaning (m/s wind speed) — normalizing per-sample
+        # destroys their absolute scale relationship to power output
+        power_mu  = x[:, -1:, :].mean(dim=-1, keepdim=True)  # (B, 1, 1)
+        power_sig = torch.sqrt(x[:, -1:, :].var(dim=-1, keepdim=True, unbiased=False) + self.rev_eps)
+        x_norm = x.clone()
+        x_norm[:, -1:, :] = (x[:, -1:, :] - power_mu) / power_sig
+        # Other variables (NWP features) unchanged — they're already standardized via StandardScaler
+
+        # Embed & process
+        x_norm = self.emb(x_norm.transpose(1,2)) + self.pe[:,:L]
         for mb, gate in zip(self.mb, self.gates):
-            x = self.drop(mb(x))
+            x_norm = self.drop(mb(x_norm))
             if self.use_lnn:
-                h,_ = gate[0](x)
-                x = x * torch.sigmoid(gate[1](h))
-        return self.dec(x[:,-1])
+                h,_ = gate[0](x_norm)
+                x_norm = x_norm * torch.sigmoid(gate[1](h))
+
+        # Decode quantiles in normalized space
+        out = self.dec(x_norm[:,-1])  # (B, pred_len, nq)
+
+        # RevIN denorm: restore original power scale
+        out = out * power_sig.squeeze(-1).unsqueeze(1) + power_mu.squeeze(-1).unsqueeze(1)
+
+        return out
 
 # ═══════════════════ Training ═══════════════════
 def pinball_loss(pred_q, target, q_tensor):

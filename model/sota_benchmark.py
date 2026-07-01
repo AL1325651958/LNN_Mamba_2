@@ -290,21 +290,17 @@ class PatchTST(nn.Module):
 
     def forward(self, x):
         B, V, L = x.shape
-        # Patch each variable independently (channel-independent)
-        # Using the first few vars to keep memory manageable, avg across vars
-        # Actually: process each var, mean-pool results
-        all_out = []
-        for v in range(V):
-            xv = x[:, v, :]  # (B, L)
-            # Create patches: unfold
-            patches = xv.unfold(1, self.patch_len, self.stride)  # (B, n_patches, patch_len)
-            patches = self.patch_embed(patches) + self.pe[:, 0]  # (B, n_patches, d)
-            patches = self.drop(patches)
-            enc = self.encoder(patches)  # (B, n_patches, d)
-            all_out.append(enc.unsqueeze(1))
-        # Mean pool across variables
-        enc = torch.cat(all_out, dim=1).mean(dim=1)  # (B, n_patches, d)
-        enc = enc.reshape(B, -1)  # (B, n_patches*d)
+        # Batch all variables together for efficiency (B*V, L) → patches
+        x_flat = x.reshape(B * V, L)  # (B*V, L)
+        patches = x_flat.unfold(1, self.patch_len, self.stride)  # (B*V, n_patches, patch_len)
+        patches = self.patch_embed(patches)  # (B*V, n_patches, d)
+        # PE: (1, 1, n_patches, d) → squeeze to (n_patches, d) for broadcast
+        patches = self.drop(patches + self.pe.squeeze(0).squeeze(0))
+        # Single batched transformer forward
+        enc = self.encoder(patches)  # (B*V, n_patches, d)
+        # Reshape back and mean pool across variables
+        enc = enc.reshape(B, V, self.n_patches, self.d)
+        enc = enc.mean(dim=1).reshape(B, -1)  # (B, n_patches*d)
         return self.head(enc).view(B, self.pred_len, self.nq)
 
 

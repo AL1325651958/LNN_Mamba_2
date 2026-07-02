@@ -106,7 +106,34 @@ loss:          Pinball loss only
 
 ---
 
-## 4. Ablation Studies
+## 4. SOTA Comparison (GEFCom2014 Zone 1, 12 models)
+
+All models tested on identical GEFCom2014 Zone 1 data split (168h→24h, pinball loss).
+
+| Model | Venue | Pinball | Δ vs LNMamba |
+|-------|-------|---------|-------------|
+| Persistence | baseline | 0.3761 | -45.0% |
+| Crossformer | ICLR 2023 | 0.2600 | -20.4% |
+| PatchTST | ICLR 2023 | 0.2596 | -20.2% |
+| TimeMixer | ICLR 2024 | 0.2704 | -23.5% |
+| iTransformer | ICLR 2024 | 0.2414 | -14.3% |
+| TimesNet | ICLR 2023 | 0.2313 | -10.6% |
+| TSMixer | KDD 2023 | 0.2275 | -9.1% |
+| DLinear | AAAI 2023 | 0.2227 | -7.1% |
+| TiDE | 2024 | 0.2184 | -5.3% |
+| ModernTCN | ICLR 2024 | 0.2165 | -4.4% |
+| GRU | baseline | 0.2161 | -4.3% |
+| **LNMamba** | ours | **0.2069** | — |
+
+### SOTA Comparison (GEFCom2012 Farm 1)
+
+| Model | Pinball | RMSE |
+|-------|---------|------|
+| Persistence | 0.119 | 0.294 |
+| QRF | 0.1003 | 0.264 |
+| **LNMamba** | **0.0806** | 0.280 |
+
+## 5. Ablation Studies
 
 ### 4.1 Architecture Ablation: Single-Zone Point Forecasting
 

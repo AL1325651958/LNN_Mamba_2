@@ -1,5 +1,5 @@
 """
-Paper figures for LNMamba — Renewable Energy journal.
+Paper figures for LNSSM — Renewable Energy journal.
 SCI-style: professional color palette, local zoom-ins, clear labeling, 300dpi.
 Generates 8 figures covering all key experimental results.
 """
@@ -31,13 +31,13 @@ C = {
 plt.rcParams.update({
     'font.family': 'sans-serif',
     'font.sans-serif': ['Arial', 'Helvetica', 'DejaVu Sans'],
-    'font.size': 9,
-    'axes.titlesize': 11,
+    'font.size': 12,
+    'axes.titlesize': 15,
     'axes.titleweight': 'bold',
-    'axes.labelsize': 10,
-    'xtick.labelsize': 8,
-    'ytick.labelsize': 8,
-    'legend.fontsize': 8,
+    'axes.labelsize': 13,
+    'xtick.labelsize': 11,
+    'ytick.labelsize': 11,
+    'legend.fontsize': 11,
     'figure.dpi': 150,
     'savefig.dpi': 300,
     'savefig.bbox': 'tight',
@@ -98,7 +98,7 @@ class WDS:
 
 
 def quick_train():
-    """Train LNMamba on all 7 GEFCom2012 farms, return model + test preds."""
+    """Train LNSSM on all 7 GEFCom2012 farms, return model + test preds."""
     from model.nwp_model import NWPMamba, pinball_loss
 
     # Load all 7 farms
@@ -185,16 +185,16 @@ def load_farm_data(fid):
 # ═══════════════════════════════════════
 def fig1_timeseries(pr, tr):
     """Multi-horizon forecast comparison: +1h, +6h, +12h, +24h with zoom inset."""
-    print("  Figure 1: Timeseries Multi-Horizon...")
+    print("  Timeseries Multi-Horizon...")
     sys.stdout.flush()
 
     # Convert to expected value
     qm = (pr[:, :, :-1] + pr[:, :, 1:]) / 2
     pe = np.sum(qm * np.diff(QUANTILES), axis=-1)
 
-    fig = plt.figure(figsize=(12, 10))
+    fig = plt.figure(figsize=(18, 14))
     gs = gridspec.GridSpec(4, 2, figure=fig, width_ratios=[3, 1], height_ratios=[1, 1, 1, 1],
-                           hspace=0.35, wspace=0.15)
+                           hspace=0.45, wspace=0.18)
 
     horizons = [0, 5, 11, 23]  # +1h, +6h, +12h, +24h
     labels   = ['+1h', '+6h', '+12h', '+24h']
@@ -206,7 +206,7 @@ def fig1_timeseries(pr, tr):
         # Main plot (left column)
         ax_main = fig.add_subplot(gs[row, 0])
         ax_main.plot(tr[start:start+n_show, h], color=C['blue'], lw=0.8, alpha=0.7, label='Ground truth')
-        ax_main.plot(pe[start:start+n_show, h], color=C['red'], lw=1.0, alpha=0.9, label=f'LNMamba {lab}')
+        ax_main.plot(pe[start:start+n_show, h], color=C['red'], lw=1.0, alpha=0.9, label=f'LNSSM {lab}')
         ax_main.fill_between(range(n_show), tr[start:start+n_show, h], pe[start:start+n_show, h],
                              alpha=0.08, color='gray')
 
@@ -214,12 +214,14 @@ def fig1_timeseries(pr, tr):
         r2_h = 1 - np.sum((pe[start:start+n_show, h] - tr[start:start+n_show, h])**2) / \
                (np.sum((tr[start:start+n_show, h] - np.mean(tr[start:start+n_show, h]))**2) + 1e-8)
 
-        ax_main.set_ylabel(f'{lab}\nPower', fontsize=9)
+        ax_main.set_ylabel(f'{lab}\nPower', fontsize=15)
         ax_main.text(0.02, 0.95, f'RMSE={rmse_h:.3f}  R²={r2_h:+.2f}',
-                     transform=ax_main.transAxes, fontsize=7, va='top',
+                     transform=ax_main.transAxes, fontsize=16, va='top',
                      bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.85, edgecolor='gray', lw=0.3))
         ax_main.grid(True, alpha=0.15, lw=0.3)
-        if row == 0: ax_main.legend(loc='upper right', fontsize=7, ncol=2, framealpha=0.9)
+        if row == 0:
+            ax_main.legend(loc='upper left', fontsize=14, ncol=1, framealpha=0.9,
+                          bbox_to_anchor=(0.01, 0.99))
         if row < 3: ax_main.set_xticklabels([])
         ax_main.set_xlim(0, n_show)
 
@@ -233,11 +235,11 @@ def fig1_timeseries(pr, tr):
         ax_zoom.grid(True, alpha=0.15, lw=0.3)
         ax_zoom.set_xlim(0, n_zoom)
         if row < 3: ax_zoom.set_xticklabels([])
-        ax_zoom.set_title('Detail', fontsize=7, color='gray', loc='right', pad=2)
+        ax_zoom.set_title('Detail', fontsize=16, color='gray', loc='right', pad=2)
 
-    fig.suptitle('Figure 1: Multi-Horizon Wind Power Prediction — GEFCom2012 Farm 1',
-                 fontsize=13, fontweight='bold', y=0.995)
-    fig.text(0.5, 0.01, 'Time step (hours)', ha='center', fontsize=10)
+    fig.suptitle('Multi-Horizon Wind Power Prediction — GEFCom2012 Farm 1',
+                 fontsize=16, fontweight='bold', y=0.995)
+    fig.text(0.5, 0.01, 'Time step (hours)', ha='center', fontsize=16)
     fig.savefig(os.path.join(OUT, 'fig1_timeseries_multihorizon.png'), dpi=300)
     fig.savefig(os.path.join(OUT, 'fig1_timeseries_multihorizon.pdf'))
     plt.close(fig)
@@ -249,7 +251,7 @@ def fig1_timeseries(pr, tr):
 # ═══════════════════════════════════════
 def fig2_scatter(pr, tr):
     """Scatter plot: expected value vs actual, hexbin density, +1h and +6h."""
-    print("  Figure 2: Scatter + Density...")
+    print("  Scatter + Density...")
     sys.stdout.flush()
 
     qm = (pr[:, :, :-1] + pr[:, :, 1:]) / 2
@@ -284,17 +286,17 @@ def fig2_scatter(pr, tr):
         r2   = 1 - np.sum((tx_f - px_f) ** 2) / (np.sum((tx_f - np.mean(tx_f)) ** 2) + 1e-8)
 
         ax.text(0.03, 0.97, f'R² = {r2:+.3f}\nRMSE = {rmse:.3f}\nMAE = {mae:.3f}',
-                transform=ax.transAxes, fontsize=8, va='top', fontfamily='monospace',
+                transform=ax.transAxes, fontsize=14, va='top', fontfamily='monospace',
                 bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.85, edgecolor='gray', lw=0.3))
         ax.set_xlabel('Actual power')
         if col == 0: ax.set_ylabel('Predicted power')
-        ax.set_title(f'{lab} (expected value)', fontsize=10)
+        ax.set_title(f'{lab} (expected value)', fontsize=16)
         ax.set_aspect('equal')
         ax.set_xlim(0, mx * 1.05); ax.set_ylim(0, mx * 1.05)
         ax.grid(True, alpha=0.15, lw=0.3)
 
-    fig.suptitle('Figure 2: Point Forecast Accuracy — Predicted vs Actual Wind Power',
-                 fontsize=13, fontweight='bold', y=1.01)
+    fig.suptitle('Point Forecast Accuracy — Predicted vs Actual Wind Power',
+                 fontsize=16, fontweight='bold', y=1.01)
     plt.tight_layout()
     fig.savefig(os.path.join(OUT, 'fig2_scatter_density.png'), dpi=300)
     fig.savefig(os.path.join(OUT, 'fig2_scatter_density.pdf'))
@@ -307,7 +309,7 @@ def fig2_scatter(pr, tr):
 # ═══════════════════════════════════════
 def fig3_horizon(pr, tr):
     """Dual-axis: RMSE/MAE by horizon + R² decay with annotated benchmark lines."""
-    print("  Figure 3: Horizon Error + R² Decay...")
+    print("  Horizon Error + R² Decay...")
     sys.stdout.flush()
 
     qm = (pr[:, :, :-1] + pr[:, :, 1:]) / 2
@@ -336,14 +338,14 @@ def fig3_horizon(pr, tr):
         ep = tr[:, h, np.newaxis] - tr[:, 0, np.newaxis]  # persist from +1h value
         persist_pb.append(np.maximum(QUANTILES * ep, (QUANTILES - 1) * ep).mean())
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 7), gridspec_kw={'height_ratios': [1, 0.6]})
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10), gridspec_kw={'height_ratios': [1, 0.6], 'hspace': 0.35})
 
     # Top: RMSE + MAE
     ax1.plot(hours, rmse_h, '-', color=C['red'], lw=2.0, label='RMSE', zorder=3)
     ax1.plot(hours, mae_h, '-', color=C['blue'], lw=2.0, label='MAE', zorder=3)
     ax1.fill_between(hours, 0, rmse_h, alpha=0.06, color=C['red'])
-    ax1.set_ylabel('Error (normalized power)', fontsize=10)
-    ax1.legend(loc='upper left', fontsize=9, framealpha=0.9)
+    ax1.set_ylabel('Error (normalized power)', fontsize=16)
+    ax1.legend(loc='upper left', fontsize=15, framealpha=0.9)
     ax1.grid(True, alpha=0.15, lw=0.3)
     ax1.set_xlim(1, H)
     ax1.set_ylim(bottom=0)
@@ -351,14 +353,14 @@ def fig3_horizon(pr, tr):
     # Annotate key horizons
     for h in [1, 6, 12, 24]:
         ax1.annotate(f'{rmse_h[h-1]:.3f}', (h, rmse_h[h-1]), textcoords="offset points",
-                     xytext=(5, 5), fontsize=7, color=C['red'], ha='left')
+                     xytext=(5, 5), fontsize=16, color=C['red'], ha='left')
 
     # Bottom: R² decay
     colors_r2 = [C['green'] if r > 0 else C['gray'] for r in r2_h]
     ax2.bar(hours, r2_h, color=colors_r2, width=0.8, alpha=0.7, edgecolor='none')
     ax2.axhline(y=0, color='k', lw=0.5, alpha=0.3)
-    ax2.set_xlabel('Horizon (hours)', fontsize=10)
-    ax2.set_ylabel('R² (expected value)', fontsize=10)
+    ax2.set_xlabel('Horizon (hours)', fontsize=16)
+    ax2.set_ylabel('R² (expected value)', fontsize=16)
     ax2.grid(True, alpha=0.15, lw=0.3, axis='y')
     ax2.set_xlim(1, H)
 
@@ -366,16 +368,16 @@ def fig3_horizon(pr, tr):
     for h, r in [(1, r2_h[0]), (4, r2_h[3]), (6, r2_h[5]), (12, r2_h[11])]:
         va = 'bottom' if r > 0 else 'top'
         ax2.annotate(f'{r:+.2f}', (h, r), textcoords="offset points",
-                     xytext=(0, 3 if r > 0 else -8), fontsize=8, ha='center', va=va,
+                     xytext=(0, 3 if r > 0 else -8), fontsize=14, ha='center', va=va,
                      fontweight='bold', color=C['green'] if r > 0 else C['gray'])
 
-    ax2.set_title('R² Decay — Wind power becomes unpredictable beyond 6 hours', fontsize=9, color='dimgray')
+    ax2.set_title('R² Decay — Wind power becomes unpredictable beyond 6 hours', fontsize=15, color='dimgray')
 
-    fig.suptitle('Figure 3: Forecast Error & R² vs Prediction Horizon', fontsize=13, fontweight='bold', y=1.01)
+    fig.suptitle('Forecast Error & R² vs Prediction Horizon', fontsize=16, fontweight='bold', y=1.01)
 
     # Pinball comparison inset (small)
     ax3 = ax1.inset_axes([0.55, 0.45, 0.40, 0.40])
-    ax3.plot(hours, pb_h, '-', color=C['red'], lw=1.5, label='LNMamba')
+    ax3.plot(hours, pb_h, '-', color=C['red'], lw=1.5, label='LNSSM')
     ax3.plot(hours, persist_pb, '--', color=C['gray'], lw=1.0, label='Persistence')
     ax3.set_xlabel('Hours', fontsize=6); ax3.set_ylabel('Pinball', fontsize=6)
     ax3.tick_params(labelsize=6)
@@ -395,7 +397,7 @@ def fig3_horizon(pr, tr):
 # ═══════════════════════════════════════
 def fig4_intervals(pr, tr):
     """Prediction intervals (50%/80%/90%) on a sample segment + zoom."""
-    print("  Figure 4: Prediction Intervals...")
+    print("  Prediction Intervals...")
     sys.stdout.flush()
 
     n_show = 72   # 3 days
@@ -427,9 +429,9 @@ def fig4_intervals(pr, tr):
 
     in_80 = np.mean((tr[start:start+n_show, h] >= p10[start:start+n_show, h]) &
                     (tr[start:start+n_show, h] <= p90[start:start+n_show, h])) * 100
-    ax_main.set_ylabel('Normalized power', fontsize=10)
-    ax_main.set_title(f'+6h Forecast with Prediction Intervals | {in_80:.0f}% in 80% CI', fontsize=11, fontweight='bold')
-    ax_main.legend(loc='upper right', fontsize=8, ncol=3, framealpha=0.9)
+    ax_main.set_ylabel('Normalized power', fontsize=16)
+    ax_main.set_title(f'+6h Forecast with Prediction Intervals | {in_80:.0f}% in 80% CI', fontsize=14, fontweight='bold')
+    ax_main.legend(loc='upper right', fontsize=14, ncol=3, framealpha=0.9)
     ax_main.grid(True, alpha=0.15, lw=0.3)
     ax_main.set_xlim(0, n_show)
 
@@ -447,14 +449,14 @@ def fig4_intervals(pr, tr):
 
     zoom_in = np.mean((tr[zs:zs+n_zoom, h] >= p10[zs:zs+n_zoom, h]) &
                       (tr[zs:zs+n_zoom, h] <= p90[zs:zs+n_zoom, h])) * 100
-    ax_zoom.set_title(f'Zoom (12h) — {zoom_in:.0f}% captured in 80% CI', fontsize=9, fontweight='bold')
-    ax_zoom.set_xlabel('Time step (hours)', fontsize=10)
-    ax_zoom.set_ylabel('Power', fontsize=10)
+    ax_zoom.set_title(f'Zoom (12h) — {zoom_in:.0f}% captured in 80% CI', fontsize=15, fontweight='bold')
+    ax_zoom.set_xlabel('Time step (hours)', fontsize=16)
+    ax_zoom.set_ylabel('Power', fontsize=16)
     ax_zoom.grid(True, alpha=0.15, lw=0.3)
     ax_zoom.set_xlim(0, n_zoom)
 
-    fig.suptitle('Figure 4: Probabilistic Forecast — Prediction Intervals (+6h horizon)',
-                 fontsize=13, fontweight='bold', y=1.01)
+    fig.suptitle('Probabilistic Forecast — Prediction Intervals (+6h horizon)',
+                 fontsize=16, fontweight='bold', y=1.01)
     plt.tight_layout()
     fig.savefig(os.path.join(OUT, 'fig4_prediction_intervals.png'), dpi=300)
     fig.savefig(os.path.join(OUT, 'fig4_prediction_intervals.pdf'))
@@ -466,41 +468,47 @@ def fig4_intervals(pr, tr):
 # FIGURE 5: Reliability Diagram
 # ═══════════════════════════════════════
 def fig5_reliability():
-    """Reliability diagram for LNMamba — already generated, just replot with SCI style."""
-    print("  Figure 5: Reliability Diagram...")
+    """Reliability diagram for LNSSM — SCI style, no overlaps."""
+    print("  Reliability Diagram...")
     sys.stdout.flush()
 
     nominal   = np.array([10, 20, 30, 40, 50, 60, 70, 80, 90])
     lnm_actual = np.array([4.6, 8.5, 12.8, 17.7, 23.1, 29.1, 36.0, 45.5, 58.6])
 
-    fig, ax = plt.subplots(figsize=(5.5, 5.5))
+    fig, ax = plt.subplots(figsize=(8, 8))
 
-    # Well-calibrated band
-    ax.fill_between([0, 100], [0, 95], [0, 105], alpha=0.04, color='gray', label='Nominal ± 5%')
-    ax.plot([0, 100], [0, 100], 'k--', lw=0.6, alpha=0.4, label='Perfect calibration')
+    # Perfect calibration line
+    ax.plot([0, 100], [0, 100], 'k--', lw=1.2, alpha=0.5, label='Perfect calibration')
+    # +/- 5% tolerance band
+    ax.fill_between([0, 100], [5, 105], [-5, 95], alpha=0.06, color='gray')
+    ax.annotate('+/- 5% tolerance', xy=(85, 92), fontsize=12, color='#888', ha='center')
 
-    ax.plot(nominal, lnm_actual, 'o-', color=C['blue'], lw=2.5, ms=9,
-            mfc='white', mew=2.5, label='LNMamba (ours)', zorder=5)
+    # LNSSM line
+    ax.plot(nominal, lnm_actual, 'o-', color=C['blue'], lw=3, ms=12,
+            mfc='white', mew=3, label='LNSSM (ours)', zorder=5)
 
-    # Annotate deviation
+    # Annotate deviation — fewer, larger, better spaced
     for nom, act in zip(nominal, lnm_actual):
         dev = act - nom
-        color = C['red'] if dev < -8 else C['gray']
+        y_offset = 2.5 if dev > -10 else -5.5  # alternate above/below to avoid overlap
         ax.annotate(f'{dev:+.0f}%', (nom, act), textcoords="offset points",
-                    xytext=(0, -12), fontsize=6.5, ha='center', color=color, alpha=0.7)
+                    xytext=(0, y_offset), fontsize=11, ha='center', fontweight='bold',
+                    color=C['red'] if dev < -8 else C['gray'],
+                    bbox=dict(boxstyle='round,pad=0.15', facecolor='white', alpha=0.6))
 
-    ax.set_xlabel('Nominal Coverage (%)', fontsize=10)
-    ax.set_ylabel('Actual Coverage (%)', fontsize=10)
-    ax.set_title('Figure 5: Reliability Diagram — GEFCom2012 Farm 1', fontsize=12, fontweight='bold')
-    ax.set_xlim(0, 100); ax.set_ylim(0, 100)
+    ax.set_xlabel('Nominal Coverage (%)', fontsize=18)
+    ax.set_ylabel('Actual Coverage (%)', fontsize=18)
+    ax.set_title('Reliability Diagram — GEFCom2012 Farm 1', fontsize=22, fontweight='bold', pad=15)
+    ax.set_xlim(-2, 102); ax.set_ylim(-2, 102)
     ax.set_aspect('equal')
-    ax.legend(loc='lower right', fontsize=8, framealpha=0.9)
-    ax.grid(True, alpha=0.15, lw=0.3)
+    ax.legend(loc='lower right', fontsize=16, framealpha=0.9,
+              bbox_to_anchor=(0.98, 0.02))
+    ax.grid(True, alpha=0.12, lw=0.4)
 
-    # Summary text box
-    ax.text(0.97, 0.03, f'Mean absolute\ndeviation: 3.95%',
-            transform=ax.transAxes, fontsize=8, ha='right', va='bottom',
-            bbox=dict(boxstyle='round,pad=0.4', facecolor=C['bg'], edgecolor='gray', lw=0.3))
+    # Summary box — moved to top-left to avoid legend clash
+    ax.text(0.03, 0.97, 'Mean absolute\ndeviation: 3.95%',
+            transform=ax.transAxes, fontsize=16, ha='left', va='top', fontweight='bold',
+            bbox=dict(boxstyle='round,pad=0.4', facecolor='white', edgecolor=C['blue'], lw=1))
 
     plt.tight_layout()
     fig.savefig(os.path.join(OUT, 'fig5_reliability_diagram.png'), dpi=300)
@@ -514,7 +522,7 @@ def fig5_reliability():
 # ═══════════════════════════════════════
 def fig6_error_dist(pr, tr):
     """Error distribution histogram + Q-Q plot."""
-    print("  Figure 6: Error Distribution...")
+    print("  Error Distribution...")
     sys.stdout.flush()
 
     qm = (pr[:, :, :-1] + pr[:, :, 1:]) / 2
@@ -544,10 +552,10 @@ def fig6_error_dist(pr, tr):
     ax1.axvline(np.mean(errors_md), color=C['red'], lw=1, ls='--', alpha=0.7,
                 label=f'Mean MD={np.mean(errors_md):.4f}')
 
-    ax1.set_xlabel('Prediction error (normalized power)', fontsize=10)
-    ax1.set_ylabel('Probability density', fontsize=10)
-    ax1.set_title('Error Distribution', fontsize=11, fontweight='bold')
-    ax1.legend(fontsize=7, loc='upper right', framealpha=0.9)
+    ax1.set_xlabel('Prediction error (normalized power)', fontsize=16)
+    ax1.set_ylabel('Probability density', fontsize=16)
+    ax1.set_title('Error Distribution', fontsize=14, fontweight='bold')
+    ax1.legend(fontsize=16, loc='upper right', framealpha=0.9)
     ax1.grid(True, alpha=0.15, lw=0.3)
 
     # Q-Q plot with normal overlay
@@ -557,18 +565,18 @@ def fig6_error_dist(pr, tr):
                                  loc=np.mean(errors_ev), scale=np.std(errors_ev))
     ax2.scatter(theoretical[::20], sorted_err[::20], c=C['blue'], s=4, alpha=0.4, edgecolors='none')
     ax2.plot(theoretical, theoretical, 'k--', lw=0.6, alpha=0.4)
-    ax2.set_xlabel('Theoretical normal quantiles', fontsize=10)
-    ax2.set_ylabel('Sample quantiles', fontsize=10)
-    ax2.set_title('Q-Q Plot (Expected Value)', fontsize=11, fontweight='bold')
+    ax2.set_xlabel('Theoretical normal quantiles', fontsize=16)
+    ax2.set_ylabel('Sample quantiles', fontsize=16)
+    ax2.set_title('Q-Q Plot (Expected Value)', fontsize=14, fontweight='bold')
     ax2.grid(True, alpha=0.15, lw=0.3)
 
     # Skewness annotation
     from scipy.stats import skew, kurtosis
     ax2.text(0.97, 0.03, f'Skewness: {skew(errors_ev):+.3f}\nExcess kurtosis: {kurtosis(errors_ev):+.3f}',
-             transform=ax2.transAxes, fontsize=8, ha='right', va='bottom', fontfamily='monospace',
+             transform=ax2.transAxes, fontsize=14, ha='right', va='bottom', fontfamily='monospace',
              bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.85, edgecolor='gray', lw=0.3))
 
-    fig.suptitle('Figure 6: Prediction Error Analysis', fontsize=13, fontweight='bold', y=1.02)
+    fig.suptitle('Prediction Error Analysis', fontsize=16, fontweight='bold', y=1.02)
     plt.tight_layout()
     fig.savefig(os.path.join(OUT, 'fig6_error_distribution.png'), dpi=300)
     fig.savefig(os.path.join(OUT, 'fig6_error_distribution.pdf'))
@@ -581,10 +589,10 @@ def fig6_error_dist(pr, tr):
 # ═══════════════════════════════════════
 def fig7_sota_comparison():
     """Bar chart: Pinball / RMSE / R² across models."""
-    print("  Figure 7: SOTA Comparison...")
+    print("  SOTA Comparison...")
     sys.stdout.flush()
 
-    models = ['Persistence', 'QRF', 'Mamba\n(no LNN)', 'LNMamba\n(ours)']
+    models = ['Persistence', 'QRF', 'Mamba\n(no LNN)', 'LNSSM\n(ours)']
     pinball = [0.119, 0.1003, 0.082, 0.0806]
     rmse    = [0.294, 0.264, 0.282, 0.280]
     colors  = [C['gray'], C['orange'], C['green'], C['blue']]
@@ -595,15 +603,15 @@ def fig7_sota_comparison():
     bars1 = ax1.bar(models, pinball, color=colors, width=0.55, edgecolor='white', lw=0.5)
     for bar, val in zip(bars1, pinball):
         ax1.text(bar.get_x() + bar.get_width()/2, val + 0.002, f'{val:.4f}',
-                 ha='center', fontsize=9, fontweight='bold')
+                 ha='center', fontsize=15, fontweight='bold')
     if len(pinball) >= 2:
         imp_vs_qrf = (pinball[1] - pinball[3]) / pinball[1] * 100
         ax1.annotate(f'↓ {imp_vs_qrf:.0f}%', xy=(2, pinball[3]),
                      xytext=(2.5, pinball[3] + 0.012),
                      arrowprops=dict(arrowstyle='->', color=C['green'], lw=1.5),
-                     fontsize=9, color=C['green'], fontweight='bold')
-    ax1.set_ylabel('Pinball Loss', fontsize=10)
-    ax1.set_title('Pinball Loss', fontsize=11, fontweight='bold')
+                     fontsize=15, color=C['green'], fontweight='bold')
+    ax1.set_ylabel('Pinball Loss', fontsize=16)
+    ax1.set_title('Pinball Loss', fontsize=14, fontweight='bold')
     ax1.grid(True, alpha=0.15, lw=0.3, axis='y')
     ax1.set_ylim(0, max(pinball) * 1.15)
 
@@ -611,13 +619,13 @@ def fig7_sota_comparison():
     bars2 = ax2.bar(models, rmse, color=colors, width=0.55, edgecolor='white', lw=0.5)
     for bar, val in zip(bars2, rmse):
         ax2.text(bar.get_x() + bar.get_width()/2, val + 0.003, f'{val:.3f}',
-                 ha='center', fontsize=9, fontweight='bold')
-    ax2.set_ylabel('RMSE', fontsize=10)
-    ax2.set_title('RMSE (Expected Value)', fontsize=11, fontweight='bold')
+                 ha='center', fontsize=15, fontweight='bold')
+    ax2.set_ylabel('RMSE', fontsize=16)
+    ax2.set_title('RMSE (Expected Value)', fontsize=14, fontweight='bold')
     ax2.grid(True, alpha=0.15, lw=0.3, axis='y')
     ax2.set_ylim(0, max(rmse) * 1.15)
 
-    fig.suptitle('Figure 7: Model Comparison — GEFCom2012 Farm 1', fontsize=13, fontweight='bold')
+    fig.suptitle('Model Comparison — GEFCom2012 Farm 1', fontsize=16, fontweight='bold')
     plt.tight_layout()
     fig.savefig(os.path.join(OUT, 'fig7_sota_comparison.png'), dpi=300)
     fig.savefig(os.path.join(OUT, 'fig7_sota_comparison.pdf'))
@@ -630,7 +638,7 @@ def fig7_sota_comparison():
 # ═══════════════════════════════════════
 def fig8_scale_effect():
     """Scatter: training samples vs pinball, annotated with DM test result."""
-    print("  Figure 8: Data Scale Effect + DM Test...")
+    print("  Data Scale Effect + DM Test...")
     sys.stdout.flush()
 
     # Data
@@ -639,25 +647,29 @@ def fig8_scale_effect():
     pinball = [0.2069, 0.0921, 0.0806, 0.0897]
     r2_1h   = [0.57, 0.600, 0.600, 0.626]
     colors_scale = [C['gray'], C['orange'], C['blue'], C['purple']]
+    # Precompute annotation offsets to avoid overlap
+    xytexts = [(-20, -20), (15, -15), (-15, 20), (20, -10)]
 
-    fig, ax = plt.subplots(figsize=(8, 5.5))
+    fig, ax = plt.subplots(figsize=(12, 8))
 
     for i, (cfg, s, p, c) in enumerate(zip(configs, samples, pinball, colors_scale)):
-        ax.scatter(np.log10(s), p, s=200, c=c, edgecolors='white', lw=2, zorder=5)
+        ax.scatter(np.log10(s), p, s=350, c=c, edgecolors='white', lw=3, zorder=5)
+        xo, yo = xytexts[i]
         ax.annotate(f'{cfg}\nPB={p:.4f}', (np.log10(s), p), textcoords="offset points",
-                     xytext=(12, -5 if i != 2 else 15), fontsize=8, ha='left',
-                     bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.85, edgecolor='gray', lw=0.3))
+                     xytext=(xo, yo), fontsize=15, ha='center',
+                     bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9, edgecolor=c, lw=0.5))
 
     ax.plot([np.log10(s) for s in samples], pinball, '-', color=C['blue'], lw=1.5, alpha=0.5, zorder=1)
-    ax.set_xlabel('Training windows (log10 scale)', fontsize=10)
-    ax.set_ylabel('Pinball Loss', fontsize=10)
-    ax.set_title('Figure 8: Effect of Training Data Scale', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Training Windows (log10 scale)', fontsize=18)
+    ax.set_ylabel('Pinball Loss (99 Quantiles)', fontsize=18)
+    ax.set_title('Effect of Training Data Scale on Pinball Loss', fontsize=20, fontweight='bold')
     ax.grid(True, alpha=0.15, lw=0.3)
+    ax.set_ylim(0.07, 0.26)
 
-    # DM test annotation box
-    ax.text(0.97, 0.97, 'DM test: LNSelective SSM vs Persistence\nDM = +12.432  p < 0.0001\n23/24 horizons significant',
-            transform=ax.transAxes, fontsize=9, ha='right', va='top', fontfamily='monospace',
-            bbox=dict(boxstyle='round,pad=0.5', facecolor='lightyellow', alpha=0.85, edgecolor='orange', lw=0.8))
+    # DM test annotation box - moved to bottom right
+    ax.text(0.99, 0.08, 'DM Test: LNSSM vs Persistence\nDM = +12.432  p < 0.0001\n23/24 horizons significant',
+            transform=ax.transAxes, fontsize=14, ha='right', va='bottom',
+            bbox=dict(boxstyle='round,pad=0.5', facecolor='#FEF9E7', alpha=0.9, edgecolor='orange', lw=1))
 
     plt.tight_layout()
     fig.savefig(os.path.join(OUT, 'fig8_data_scale.png'), dpi=300)
@@ -671,12 +683,12 @@ def fig8_scale_effect():
 # ═══════════════════════════════════════
 def main():
     print("=" * 60)
-    print("  LNMamba Paper Figures — SCI Style, 300dpi, PNG+PDF")
+    print("  LNSSM Paper Figures — SCI Style, 300dpi, PNG+PDF")
     print("=" * 60)
     sys.stdout.flush()
 
     # Train model (once, reuse predictions)
-    print("\n[0] Training LNMamba (shared across all figures)...")
+    print("\n[0] Training LNSSM (shared across all figures)...")
     sys.stdout.flush()
     pr, tr = quick_train()
     print(f"  Predictions: {pr.shape}, Targets: {tr.shape}")

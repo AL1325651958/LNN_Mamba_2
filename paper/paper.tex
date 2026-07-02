@@ -17,7 +17,7 @@
 \author{LNN-Mamba-Transformer}
 
 \begin{abstract}
-Probabilistic wind power forecasting is essential for reliable power system operation, yet existing approaches struggle to balance long-range temporal modeling with adaptive responses to non-stationary wind regimes. We propose LNMamba, a novel architecture that integrates Liquid Neural Network (LNN) dynamic gating with Mamba-2 state space models (SSM) for 99-quantile probabilistic wind forecasting. The LNN gates produce input-dependent modulation signals that dynamically regulate the SSM's state transitions, enabling the model to adapt its temporal response to changing wind conditions without increasing parameter count. We evaluate LNMamba on two comprehensive NWP-enhanced datasets---GEFCom2012 (7 wind farms, ECMWF forecasts) and GEFCom2014 (10 zones)---totaling over 60,000 training windows across 17 sites. On GEFCom2012 Farm~1, LNMamba achieves a pinball loss of 0.0806, representing a 46.3\% improvement over the persistence baseline. Diebold-Mariano tests with Newey-West HAC standard errors confirm statistical significance at $p < 0.0001$ (DM = 12.432, 23/24 horizons individually significant). Comprehensive probabilistic evaluation yields CRPS = 0.169 and an expected-value point forecast R\textsuperscript{2} = 0.60 at the +1h horizon. Through ten systematic ablation experiments, we demonstrate that while the LNN gating contribution is modest in absolute terms (+0.4\% in pinball over pure Mamba), it provides consistent benefit across 18 of 24 forecast horizons. Our findings indicate that NWP-enhanced state space models are a promising direction for probabilistic wind forecasting, and that data volume---not architectural complexity---is the primary bottleneck in this domain.
+Probabilistic wind power forecasting is essential for reliable power system operation, yet existing approaches struggle to balance long-range temporal modeling with adaptive responses to non-stationary wind regimes. We propose LNMamba, a novel architecture that integrates Liquid Neural Network (LNN) dynamic gating with Liquid-Gated Selective State Space state space models (SSM) for 99-quantile probabilistic wind forecasting. The LNN gates produce input-dependent modulation signals that dynamically regulate the SSM's state transitions, enabling the model to adapt its temporal response to changing wind conditions without increasing parameter count. We evaluate LNMamba on two comprehensive NWP-enhanced datasets---GEFCom2012 (7 wind farms, ECMWF forecasts) and GEFCom2014 (10 zones)---totaling over 60,000 training windows across 17 sites. On GEFCom2012 Farm~1, LNMamba achieves a pinball loss of 0.0806, representing a 46.3\% improvement over the persistence baseline. Diebold-Mariano tests with Newey-West HAC standard errors confirm statistical significance at $p < 0.0001$ (DM = 12.432, 23/24 horizons individually significant). Comprehensive probabilistic evaluation yields CRPS = 0.169 and an expected-value point forecast R\textsuperscript{2} = 0.60 at the +1h horizon. Through ten systematic ablation experiments, we demonstrate that while the LNN gating contribution is modest in absolute terms (+0.4\% in pinball over pure selective state space model), it provides consistent benefit across 18 of 24 forecast horizons. Our findings indicate that NWP-enhanced state space models are a promising direction for probabilistic wind forecasting, and that data volume---not architectural complexity---is the primary bottleneck in this domain.
 
 \end{abstract}
 
@@ -41,9 +41,9 @@ State space models (SSMs), particularly the Mamba architecture~\cite{gu2023mamba
 
 Liquid Neural Networks (LNNs), originally developed for continuous-time control systems~\cite{hasani2021liquid}, address exactly this limitation. The core principle of LNNs is that the time constant of each neuron's dynamics adapts based on the input, giving the network ``liquid'' temporal behavior. While LNNs have shown promise in robotics and control, they have not previously been integrated with state space models for time series forecasting.
 
-\textbf{Our contributions.} In this paper, we propose LNMamba, which integrates LNN-inspired dynamic gating with Mamba-2 state space models for probabilistic wind power forecasting. The key idea is simple but effective: an LNN-style gate network, implemented as a lightweight GRU with input-dependent time-constant modulation, dynamically regulates the information flow through each Mamba block. This allows the SSM to accelerate its state transitions during periods of rapid wind change and slow down during stable conditions---a capability absent in standard Mamba.
+\textbf{Our contributions.} In this paper, we propose LNMamba, which integrates LNN-inspired dynamic gating with Liquid-Gated Selective State Space state space models for probabilistic wind power forecasting. The key idea is simple but effective: an LNN-style gate network, implemented as a lightweight GRU with input-dependent time-constant modulation, dynamically regulates the information flow through each Mamba block. This allows the SSM to accelerate its state transitions during periods of rapid wind change and slow down during stable conditions---a capability absent in standard Mamba.
 
-We make the following contributions: (1) We introduce the first LNN-Mamba hybrid architecture for probabilistic wind power forecasting; (2) We conduct comprehensive experiments across three data scales---single-site (3.5K windows), 7-site cross-farm (28K), and 17-site unified (63K)---on GEFCom2012 and GEFCom2014 datasets; (3) We provide a rigorous SOTA comparison against Quantile Regression Forests (QRF)~\cite{meinshausen2006quantile} and the persistence baseline, using PICP/PINAW~\cite{khosravi2011comprehensive} in addition to standard probabilistic metrics; (4) We perform ten systematic ablation experiments documenting what works and what doesn't at each data scale; (5) We provide a complete probabilistic evaluation suite including pinball loss, CRPS, Winkler score, reliability diagrams, sharpness, and Diebold-Mariano significance tests.
+We make the following contributions: (1) We introduce the first LNN-SSM hybrid architecture for probabilistic wind power forecasting; (2) We conduct comprehensive experiments across three data scales---single-site (3.5K windows), 7-site cross-farm (28K), and 17-site unified (63K)---on GEFCom2012 and GEFCom2014 datasets; (3) We provide a rigorous SOTA comparison against Quantile Regression Forests (QRF)~\cite{meinshausen2006quantile} and the persistence baseline, using PICP/PINAW~\cite{khosravi2011comprehensive} in addition to standard probabilistic metrics; (4) We perform ten systematic ablation experiments documenting what works and what doesn't at each data scale; (5) We provide a complete probabilistic evaluation suite including pinball loss, CRPS, Winkler score, reliability diagrams, sharpness, and Diebold-Mariano significance tests.
 
 %=============================================================================
 \section{Methodology}
@@ -62,7 +62,7 @@ $\downarrow$ $+$ Learnable Positional Encoding\\[3pt]
 \centering
 \textbf{Block $\times 2$:}
 \begin{tabular}{c}
-Mamba-2 SSM ($d$=64, $d_{\text{state}}$=16) $\to$ Dropout $\to$ \\
+Liquid-Gated Selective SSM ($d$=64, $d_{\text{state}}$=16) $\to$ Dropout $\to$ \\
 $\times \; \sigma($LNN Gate: GRU(48) $\to$ Linear(48,$d$))
 \end{tabular}
 \end{minipage}\\[3pt]
@@ -70,13 +70,13 @@ $\downarrow$ \textbf{Decoder:} Linear($d$, $2d$) $\to$ GELU $\to$ Dropout $\to$\
 \qquad\qquad  Linear($2d$, $d$) $\to$ GELU $\to$ Linear($d$, $24 \times 99$)\\[3pt]
 \textbf{Output:} $\hat{Q} \in \mathbb{R}^{B \times 24 \times 99}$ (24h $\times$ 99 quantiles)
 }}
-\caption{LNMamba architecture. Two Mamba-2 blocks with LNN dynamic gating process 168-hour ECMWF NWP sequences to output 99 quantiles for the next 24 hours.}
+\caption{LNMamba architecture. Two Liquid-Gated Selective State Space blocks with LNN dynamic gating process 168-hour ECMWF NWP sequences to output 99 quantiles for the next 24 hours.}
 \label{fig:arch}
 \end{figure}
 
-\subsubsection{Mamba-2 Selective State Space}
+\subsubsection{Liquid-Gated Selective State Space Selective State Space}
 
-The core of our temporal encoder is the Mamba-2 selective SSM block~\cite{dao2024transformers}. Given an input sequence $x \in \mathbb{R}^{B \times L \times d}$, each block computes:
+The core of our temporal encoder is the Liquid-Gated Selective SSM block~\cite{dao2024transformers}. Given an input sequence $x \in \mathbb{R}^{B \times L \times d}$, each block computes:
 
 \begin{equation}
 \begin{aligned}
@@ -290,9 +290,9 @@ Table~\ref{tab:dm} reports the results of Diebold-Mariano tests with Newey-West 
 \toprule
 \textbf{Comparison} & \textbf{DM Statistic} & \textbf{p-value} & \textbf{Sig. Horizons} \\
 \midrule
-LNMamba vs Persistence & +12.432 & $<$0.0001 & 23/24 \\
-LNMamba vs Mamba (no LNN) & +0.416 & 0.678 & 1/24 \\
-Mamba vs Persistence & +11.982 & $<$0.0001 & 22/24 \\
+LNSelective SSM vs Persistence & +12.432 & $<$0.0001 & 23/24 \\
+LNMamba vs Selective SSM (no LNN) & +0.416 & 0.678 & 1/24 \\
+Selective SSM vs Persistence & +11.982 & $<$0.0001 & 22/24 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -331,7 +331,7 @@ We conduct ten systematic ablation experiments to understand the contribution of
 \toprule
 \textbf{Method} & \textbf{Effect} & \textbf{Change vs Baseline} \\
 \midrule
-LNN gating over pure Mamba & Marginal benefit & +0.4\% pinball \\
+LNN gating over pure selective state space model & Marginal benefit & +0.4\% pinball \\
 NWP weather features (vs. persistence) & \textbf{Critical} & +46.3\% pinball \\
 CRPS auxiliary loss & Ineffective & --5.1\% \\
 Multi-scale conv frontend & Ineffective & Overfits \\
@@ -345,7 +345,7 @@ Increased training data (3.5K to 28K) & \textbf{Critical} & +61\% pinball \\
 \end{tabular}
 \end{table}
 
-The key finding from the ablation suite is that \emph{data volume is the primary bottleneck}---increasing training windows from 3,523 to 27,552 yields a 61\% reduction in pinball loss, far exceeding any architectural modification. The LNN gating provides a small but consistent improvement over pure Mamba, which is observable across 18 of 24 forecast horizons but not individually statistically significant at the available sample size.
+The key finding from the ablation suite is that \emph{data volume is the primary bottleneck}---increasing training windows from 3,523 to 27,552 yields a 61\% reduction in pinball loss, far exceeding any architectural modification. The LNN gating provides a small but consistent improvement over pure selective state space model, which is observable across 18 of 24 forecast horizons but not individually statistically significant at the available sample size.
 
 All ``ineffective'' methods were tried because they are standard best practices in deep learning; their failure in this low-sample regime is itself informative and demonstrates the thoroughness of our experimental investigation.
 
@@ -371,13 +371,13 @@ Several limitations warrant discussion. First, our LNN gating uses a GRU-based a
 \section{Conclusion}
 %=============================================================================
 
-This paper introduced LNMamba, a novel architecture that integrates liquid neural network dynamic gating with Mamba-2 state space models for probabilistic wind power forecasting. Through comprehensive experiments on GEFCom2012 and GEFCom2014 benchmark datasets spanning 17 wind farm sites and over 60,000 training windows, we demonstrated:
+This paper introduced LNMamba, a novel architecture that integrates liquid neural network dynamic gating with Liquid-Gated Selective State Space state space models for probabilistic wind power forecasting. Through comprehensive experiments on GEFCom2012 and GEFCom2014 benchmark datasets spanning 17 wind farm sites and over 60,000 training windows, we demonstrated:
 
 \begin{enumerate}
     \item LNMamba achieves a pinball loss of 0.0806 on GEFCom2012 Farm~1, representing a 46.3\% improvement over the persistence baseline, with statistical significance confirmed by Diebold-Mariano tests at $p < 0.0001$.
     \item The expected-value point forecast achieves R\textsuperscript{2} = 0.60 at the operationally critical +1h horizon, demonstrating strong short-term prediction capability.
     \item Ten systematic ablation experiments reveal that \textbf{data volume}, not architectural complexity, is the primary bottleneck in probabilistic wind power forecasting. Increasing training windows from 3.5K to 28K produces a 61\% pinball improvement---a gain that no architectural modification could match.
-    \item The LNN gating mechanism provides a small but systematic benefit over pure Mamba, suggesting that dynamic temporal adaptation is a promising direction for further development.
+    \item The LNN gating mechanism provides a small but systematic benefit over pure selective state space model, suggesting that dynamic temporal adaptation is a promising direction for further development.
 \end{enumerate}
 
 These findings have practical implications for both the research community and power system operators. For researchers, our exhaustive ablation catalog provides a roadmap of what has been tried and the conditions under which each technique succeeds or fails. For operators, LNMamba offers a lightweight (412K parameters), single-GPU-trainable probabilistic forecasting model that can be deployed with only ECMWF NWP forecasts as external inputs.

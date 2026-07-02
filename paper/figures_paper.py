@@ -238,8 +238,9 @@ def fig1_timeseries(pr, tr):
         ax_zoom.set_title('Detail', fontsize=16, color='gray', loc='right', pad=2)
 
     fig.suptitle('Multi-Horizon Wind Power Prediction — GEFCom2012 Farm 1',
-                 fontsize=16, fontweight='bold', y=0.995)
-    fig.text(0.5, 0.01, 'Time step (hours)', ha='center', fontsize=16)
+                 fontsize=20, fontweight='bold', y=1.005)
+    fig.text(0.5, 0.005, 'Time step (hours)', ha='center', fontsize=18)
+    fig.subplots_adjust(hspace=0.45, wspace=0.18, top=0.95, bottom=0.05, left=0.08, right=0.97)
     fig.savefig(os.path.join(OUT, 'fig1_timeseries_multihorizon.png'), dpi=300)
     fig.savefig(os.path.join(OUT, 'fig1_timeseries_multihorizon.pdf'))
     plt.close(fig)
@@ -385,7 +386,7 @@ def fig3_horizon(pr, tr):
     ax3.grid(True, alpha=0.15, lw=0.3)
     ax3.set_xlim(1, H)
 
-    plt.tight_layout()
+    fig.subplots_adjust(hspace=0.30, top=0.93, bottom=0.08, left=0.10, right=0.97)
     fig.savefig(os.path.join(OUT, 'fig3_horizon_error.png'), dpi=300)
     fig.savefig(os.path.join(OUT, 'fig3_horizon_error.pdf'))
     plt.close(fig)

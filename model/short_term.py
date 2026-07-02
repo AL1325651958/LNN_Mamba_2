@@ -2,7 +2,7 @@
 Short-term wind power forecasting — clean comparison.
 
 Pred_len=24 (6h), seq_len=168 (42h), single site.
-Models: Persistence → GRU → Mamba → LNN-Mamba
+Models: Persistence → GRU → Mamba → LNN-Gated Selective SSM
 """
 import sys,os,glob,time,json,argparse,io
 import numpy as np
@@ -249,12 +249,12 @@ def main():
         for x,y in testl: mpr.append(mb(x.to(device)).cpu().numpy()); mtr.append(y.numpy())
     m_m, _, _ = metrics(np.concatenate(mpr), np.concatenate(mtr), None, scaler_p)
 
-    # LNN-Mamba
-    print('\n=== LNN-Mamba ===')
+    # LNN-Gated Selective SSM
+    print('\n=== LNN-Gated Selective SSM ===')
     lm = LNNMambaModel(n_vars, d=args.d_model, nb=2, ds=16, pred=PRED).to(device)
     n_lm = sum(p.numel() for p in lm.parameters())
     print(f'Params: {n_lm:,}')
-    lm_rmse, lm_hist = train_model(lm, tl, vl, device, args.epochs, args.lr, 'LNN-Mamba')
+    lm_rmse, lm_hist = train_model(lm, tl, vl, device, args.epochs, args.lr, 'LNN-Gated Selective SSM')
     lm.eval(); lpr,ltr = [],[]
     with torch.no_grad():
         for x,y in testl: lpr.append(lm(x.to(device)).cpu().numpy()); ltr.append(y.numpy())
@@ -268,19 +268,19 @@ def main():
     print(f'{"Model":<20s} {"Params":>8s} {"RMSE(MW)":>10s} {"MAE(MW)":>10s} {"MAPE":>8s} {"R2":>8s}')
     print(f'{"-"*70}')
     for name, m, ps in [('Persistence', pm, 0), ('GRU', g_m, n_gru),
-                         ('Mamba', m_m, n_mb), ('LNN-Mamba', l_m, n_lm)]:
+                         ('Mamba', m_m, n_mb), ('LNN-Gated Selective SSM', l_m, n_lm)]:
         print(f'{name:<20s} {ps:>8,} {m["rmse"]:>10.2f} {m["mae"]:>10.2f} {m["mape"]:>7.1f}% {m["r2"]:>7.3f}')
 
     # Impvt vs persistence
     p_rmse = pm['rmse']
     print(f'\n{"Improvement vs Persistence":-^70}')
-    for name, m in [('GRU', g_m), ('Mamba', m_m), ('LNN-Mamba', l_m)]:
+    for name, m in [('GRU', g_m), ('Mamba', m_m), ('LNN-Gated Selective SSM', l_m)]:
         imp = (p_rmse - m['rmse'])/p_rmse*100
         print(f'{name:<20s} RMSE: {p_rmse:.1f}→{m["rmse"]:.1f} MW ({imp:+.1f}%)')
 
     # Per-horizon
     print(f'\n{"Per-horizon RMSE (MW)":-^70}')
-    print(f'{"Horizon":<12s} {"Persistence":>12s} {"GRU":>12s} {"Mamba":>12s} {"LNN-Mamba":>12s}')
+    print(f'{"Horizon":<12s} {"Persistence":>12s} {"GRU":>12s} {"Mamba":>12s} {"LNN-Gated Selective SSM":>12s}')
     for h in [0,3,7,11,15,19,23]:
         print(f'+{(h+1)*15:3d}min     {pm["rmse_h"][h]:>12.2f} {g_m["rmse_h"][h]:>12.2f} {m_m["rmse_h"][h]:>12.2f} {l_m["rmse_h"][h]:>12.2f}')
 
@@ -293,7 +293,7 @@ def main():
     ax.plot(hh, pm['rmse_h'], 'k-', lw=2, label=f'Persistence (RMSE={pm["rmse"]:.1f} MW)')
     ax.plot(hh, g_m['rmse_h'], 'b-', lw=1.5, alpha=0.8, label=f'GRU (RMSE={g_m["rmse"]:.1f})')
     ax.plot(hh, m_m['rmse_h'], 'g-', lw=1.5, alpha=0.8, label=f'Mamba (RMSE={m_m["rmse"]:.1f})')
-    ax.plot(hh, l_m['rmse_h'], 'r-', lw=2, label=f'LNN-Mamba (RMSE={l_m["rmse"]:.1f})')
+    ax.plot(hh, l_m['rmse_h'], 'r-', lw=2, label=f'LNN-Gated Selective SSM (RMSE={l_m["rmse"]:.1f})')
     ax.set_xlabel('Horizon (minutes)'); ax.set_ylabel('RMSE (MW)')
     ax.set_title(f'Short-term Wind Power Forecasting | Site 2 (200MW) | {SEQ*15/60:.0f}h → {PRED*15/60:.0f}h')
     ax.legend(); ax.grid(alpha=0.2)
@@ -304,12 +304,12 @@ def main():
     n = 192; start = len(pr)//4
     fig, ax = plt.subplots(figsize=(14,4))
     ax.plot(tr[start:start+n, 0], 'b-', lw=1, alpha=0.8, label='Actual Power')
-    ax.plot(pr[start:start+n, 0], 'r--', lw=1, alpha=0.8, label='LNN-Mamba +15min')
+    ax.plot(pr[start:start+n, 0], 'r--', lw=1, alpha=0.8, label='LNN-Gated Selective SSM +15min')
     ax.plot(range(n), tr[start:start+n, 11], 'b-', lw=0.5, alpha=0.4)
     ax.plot(range(n), pr[start:start+n, 11], 'r--', lw=0.5, alpha=0.4)
     ax.fill_between(range(n), tr[start:start+n,0], pr[start:start+n,0], alpha=0.08, color='gray')
     ax.set_xlabel('Sample index'); ax.set_ylabel('Power (MW)')
-    ax.set_title(f'LNN-Mamba: +15min & +3h Predictions')
+    ax.set_title(f'LNN-Gated Selective SSM: +15min & +3h Predictions')
     ax.legend(); ax.grid(alpha=0.2)
     plt.tight_layout(); plt.savefig('plots/short_term_timeseries.png', dpi=150); plt.close()
 
@@ -320,10 +320,10 @@ def main():
     ax.hexbin(tf, pf, gridsize=50, cmap='Blues', mincnt=1, alpha=0.85)
     mx = max(tf.max(), pf.max()); ax.plot([0,mx],[0,mx],'k--',lw=1,alpha=0.5)
     rmse_v = np.sqrt(np.mean((pf-tf)**2)); r2_v = 1-np.sum((tf-pf)**2)/(np.sum((tf-np.mean(tf))**2)+1e-8)
-    ax.text(0.05,0.95,f'LNN-Mamba\nRMSE={rmse_v:.1f}MW\nR²={r2_v:.3f}', transform=ax.transAxes, fontsize=11, va='top',
+    ax.text(0.05,0.95,f'LNN-Gated Selective SSM\nRMSE={rmse_v:.1f}MW\nR²={r2_v:.3f}', transform=ax.transAxes, fontsize=11, va='top',
             bbox=dict(boxstyle='round',facecolor='white',alpha=0.85), fontfamily='monospace')
     ax.set_xlabel('Actual (MW)'); ax.set_ylabel('Predicted (MW)'); ax.set_aspect('equal')
-    ax.set_title('LNN-Mamba: Predicted vs Actual')
+    ax.set_title('LNN-Gated Selective SSM: Predicted vs Actual')
     plt.tight_layout(); plt.savefig('plots/short_term_scatter.png', dpi=150); plt.close()
 
     print(f'\nPlots saved to plots/')

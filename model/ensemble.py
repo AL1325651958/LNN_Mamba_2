@@ -69,7 +69,7 @@ class NoisyWDS(Dataset):
         return x.T, y
 
 # ═══════════════════════════════════════
-# Lightweight Mamba SSM (d=64, ds=16)
+# Lightweight Selective SSM (d=64, ds=16)
 # ═══════════════════════════════════════
 class LightMamba(nn.Module):
     def __init__(self, d=64, ds=16, dc=4):
@@ -110,7 +110,7 @@ class LightLNN(nn.Module):
         return torch.sigmoid(self.out(h))
 
 class LNMambaLight(nn.Module):
-    """Light LNN-Mamba: d=64, ds=16, nb=2, ~200K params."""
+    """Light LNN-Gated Selective SSM: d=64, ds=16, nb=2, ~200K params."""
     def __init__(self, V, d=64, ds=16, nb=2, pred=24, nq=99, dropout=0.1):
         super().__init__()
         self.pred_len = pred; self.nq = nq; d2 = d*2

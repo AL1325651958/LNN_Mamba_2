@@ -109,7 +109,7 @@ class NWPDS(Dataset):
         return (self.data[st:st+self.seq].T,
                 self.data[st+self.seq:st+self.seq+self.pred, -1])
 
-# ═══════════════════ Model (Quantile LNN-Mamba) ═══════════════════
+# ═══════════════════ Model (Quantile LNN-Gated Selective SSM) ═══════════════════
 class MambaSSM(nn.Module):
     def __init__(self, d, ds=16, dc=4, ex=2):
         super().__init__()
@@ -153,7 +153,7 @@ class QuantileDecoder(nn.Module):
         return self.net(x).view(-1, self.pred, self.nq)
 
 class NWPMamba(nn.Module):
-    """LNN-Mamba with RevIN + NWP weather features for probabilistic WPF."""
+    """LNN-Gated Selective SSM with RevIN + NWP weather features for probabilistic WPF."""
     def __init__(self, V, d=64, nb=2, ds=16, pred=24, nq=99, use_lnn=True):
         super().__init__()
         self.use_lnn = use_lnn
@@ -344,11 +344,11 @@ def main():
             zid, args.seq, args.pred, args.batch, args.stride)
         print(f'\n{info}')
 
-        # Mamba + LNN
+        # Selective SSM + LNN
         model = NWPMamba(n_vars, d=args.d_model, nb=2, ds=16, pred=args.pred,
                          nq=len(QUANTILES), use_lnn=True).to(device)
         n_p = sum(p.numel() for p in model.parameters())
-        print(f'  LNN-Mamba params: {n_p:,}')
+        print(f'  LNN-Gated Selective SSM params: {n_p:,}')
 
         best = train_one_zone(model, tl, vl, device, args.epochs, args.lr)
         test_pb, test_pr, test_tr = evaluate(model, testl, scaler_y, device)

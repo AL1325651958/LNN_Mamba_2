@@ -84,7 +84,7 @@ def plot_time_series(preds: np.ndarray, targets: np.ndarray, n_points: int = 576
 
     ax.set_xlabel('Time', fontsize=12)
     ax.set_ylabel('Power (MW)', fontsize=12)
-    ax.set_title('LNN-Mamba-Transformer: Wind Power Prediction vs Ground Truth\n'
+    ax.set_title('LNN-Gated Selective SSM-Transformer: Wind Power Prediction vs Ground Truth\n'
                  f'Wind Farm Site 2 (200MW) — {n_points} points ({n_points*15/60:.0f} hours)',
                  fontsize=14, fontweight='bold')
     ax.legend(loc='upper right', fontsize=10)

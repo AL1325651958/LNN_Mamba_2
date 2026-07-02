@@ -28,7 +28,7 @@ FEAT_COLS = ['U10','V10','U100','V100','WS10','WS100',
 
 # ── Memory-efficient Mamba ──
 class MambaSSM(nn.Module):
-    """Mamba SSM with sequential scan (O(L), memory efficient)."""
+    """Selective SSM with sequential scan (O(L), memory efficient)."""
     def __init__(self, d, ds=32, dc=4, ex=2):
         super().__init__()
         self.ds = ds; di = d * ex

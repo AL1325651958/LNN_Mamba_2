@@ -1,5 +1,5 @@
 """
-Clean LNN-Mamba model — minimal, fast, verifiable.
+Clean LNN-Gated Selective SSM model — minimal, fast, verifiable.
 
 Architecture stack (each added incrementally and measured):
   Level 0: GRU baseline
@@ -24,7 +24,7 @@ from typing import Optional, Dict
 
 
 # ═══════════════════════════════════════════════════════
-# Fast Mamba SSM — optimized for L < 200
+# Fast Selective SSM — optimized for L < 200
 # ═══════════════════════════════════════════════════════
 
 class FastMambaBlock(nn.Module):
@@ -120,7 +120,7 @@ class FastLNNGate(nn.Module):
 
 
 # ═══════════════════════════════════════════════════════
-# Clean LNN-Mamba Model
+# Clean LNN-Gated Selective SSM Model
 # ═══════════════════════════════════════════════════════
 
 class CleanLNNMamba(nn.Module):

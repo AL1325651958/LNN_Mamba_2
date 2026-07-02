@@ -80,7 +80,7 @@ class DropPath(nn.Module):
         return x / keep_prob * random_tensor
 
 class RegMambaBlock(nn.Module):
-    """Mamba SSM with DropPath on residual."""
+    """Selective SSM with DropPath on residual."""
     def __init__(self, d, ds=16, dc=4, drop_path=0.1):
         super().__init__()
         self.ds = ds; di = d * 2

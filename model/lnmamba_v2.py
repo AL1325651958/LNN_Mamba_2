@@ -40,8 +40,8 @@ FEAT_COLS = ['U10','V10','U100','V100','WS10','WS100',
              'WD10_SIN','WD10_COS','WD100_SIN','WD100_COS','SHEAR','TURB']
 
 # ═══════════════════ Bidirectional Mamba Block ═══════════════════
-class BiMamba(nn.Module):
-    """Forward + backward Mamba SSM, output concatenated and projected."""
+class BiDirectionalSSM(nn.Module):
+    """Forward + backward Selective SSM, output concatenated and projected."""
     def __init__(self, d, ds=32, dc=4, ex=2):
         super().__init__()
         di = d * ex; self.ds = ds
@@ -133,7 +133,7 @@ class LNMambaV2(nn.Module):
         self.ms_conv = MultiScaleConvFrontend(d)
 
         # Bidirectional Mamba blocks
-        self.blocks = nn.ModuleList([BiMamba(d, ds) for _ in range(nb)])
+        self.blocks = nn.ModuleList([BiDirectionalSSM(d, ds) for _ in range(nb)])
 
         # LNN gates (one per block)
         self.gates = nn.ModuleList([
@@ -292,7 +292,7 @@ def main():
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'LNMamba v2 | Device: {device} | {len(FEAT_COLS)} weather vars + 4 time cyclic')
-    print(f'Optimizations: Bi-Mamba ×4, d={args.d_model}, multiscale conv, CRPS + crossing penalty')
+    print(f'Optimizations: Bi-directional Selective SSM ×4, d={args.d_model}, multiscale conv, CRPS + crossing penalty')
     print(f'{"="*60}')
 
     # Data

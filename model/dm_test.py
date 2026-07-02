@@ -412,10 +412,10 @@ def main():
     print(f'  Mean DM across horizons: {np.mean(dm_h1):.3f}')
 
     # ═══════════════════════════════════════
-    # DM Test 2: LNMamba vs Mamba (no LNN)
+    # DM Test 2: LNMamba vs Selective SSM (no LNN)
     # ═══════════════════════════════════════
     print('\n' + '=' * 60)
-    print('DM TEST 2: LNMamba (with LNN) vs Mamba (no LNN)')
+    print('DM TEST 2: LNMamba (with LNN) vs Selective SSM (no LNN)')
     print('  H0: LNN gating has no effect')
     print('  H1: LNN gating improves pinball loss')
     print('  loss_diff = pinball(mamba) - pinball(lnn)')
@@ -468,14 +468,14 @@ def main():
   │ Comparison                   │ DM Stat  │ p-value │ Significant? │
   ├──────────────────────────────┼──────────┼─────────┼──────────────┤
   │ LNMamba vs Persistence       │ {dm1:>+8.3f} │ {p1:>7.4f} │ {"YES ★" if sig1 else "no":>12s} │
-  │ LNMamba vs Mamba (no LNN)    │ {dm2:>+8.3f} │ {p2:>7.4f} │ {"YES ★" if sig2 else "no":>12s} │
+  │ LNMamba vs Selective SSM (no LNN)    │ {dm2:>+8.3f} │ {p2:>7.4f} │ {"YES ★" if sig2 else "no":>12s} │
   │ Mamba vs Persistence         │ {dm3:>+8.3f} │ {p3:>7.4f} │ {"YES ★" if sig3 else "no":>12s} │
   ├──────────────────────────────┼──────────┼─────────┼──────────────┤
   │ LNMamba vs Persistence       │          │         │              │
   │   Significant horizons       │ {n_sig_h1}/{PRED}      │         │              │
   │   Mean DM across horizons    │ {np.mean(dm_h1):.3f}    │         │              │
   ├──────────────────────────────┼──────────┼─────────┼──────────────┤
-  │ LNMamba vs Mamba (no LNN)    │          │         │              │
+  │ LNMamba vs Selective SSM (no LNN)    │          │         │              │
   │   Significant horizons       │ {n_sig_h2}/{PRED}      │         │              │
   │   Mean DM across horizons    │ {np.mean(dm_h2):.3f}    │         │              │
   └──────────────────────────────┴──────────┴─────────┴──────────────┘

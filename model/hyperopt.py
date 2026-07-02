@@ -61,7 +61,7 @@ def load_data(stride=4):
     val_ds   = WDS(data[te:ve], stride)
     return train_ds, val_ds, data.shape[1], sy
 
-# ── Mamba SSM (lightweight) ──
+# ── Selective SSM (lightweight) ──
 class Mb(nn.Module):
     def __init__(self, d, ds=16, dc=4, ex=2):
         super().__init__()

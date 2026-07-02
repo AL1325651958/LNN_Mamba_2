@@ -1,5 +1,5 @@
 """
-Training script for LNN-Mamba-Transformer (LMT) wind power forecasting.
+Training script for LNN-Gated Selective SSM-Transformer (LMT) wind power forecasting.
 
 Usage:
     python -m model.train --site Wind_farm_site_2_200MW --epochs 100 --batch_size 32
@@ -339,7 +339,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train LNN-Mamba-Transformer')
+    parser = argparse.ArgumentParser(description='Train LNN-Gated Selective SSM-Transformer')
 
     # Data
     parser.add_argument('--data_dir', type=str, default='data/wind')

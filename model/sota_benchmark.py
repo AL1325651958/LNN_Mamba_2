@@ -16,7 +16,7 @@ Models:
   9. TiDE             — Google 2024, dense encoder-decoder
   10. TimeMixer       — ICLR 2024, multi-scale mixing
   11. Crossformer     — ICLR 2023, cross-dimension attention
-  12. LNN-Mamba       — SSM + liquid time-constant gates (ours)
+  12. LNN-Gated Selective SSM       — SSM + liquid time-constant gates (ours)
 
 Task: 168h ECMWF NWP → 24h wind power, 99 quantiles, pinball loss
 Data:  GEFCom2014 Zones 1-10, 85/7/8% train/val/test split
@@ -746,11 +746,11 @@ class Crossformer(nn.Module):
 
 
 # ═══════════════════════════════════════════════════════════════
-# MODEL 12: LNN-Mamba (Ours)
+# MODEL 12: LNN-Gated Selective SSM (Ours)
 # ═══════════════════════════════════════════════════════════════
 
 class MambaSSM(nn.Module):
-    """Fast Mamba-2 SSM block with parallel scan."""
+    """Fast Liquid-Gated Selective SSM block with parallel scan."""
     def __init__(self, d, ds=16, dc=4, ex=2):
         super().__init__()
         di = d * ex; self.ds = ds
@@ -784,7 +784,7 @@ class MambaSSM(nn.Module):
 
 class LNNMamba(nn.Module):
     """
-    LNN-Mamba: Mamba-2 SSM + Liquid Time-Constant Gates
+    LNN-Gated Selective SSM: Liquid-Gated Selective SSM + Liquid Time-Constant Gates
     Combines selective state-space temporal encoding with input-dependent
     gating for adaptive wind regime response.
     """

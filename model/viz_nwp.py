@@ -86,7 +86,7 @@ for ax, h, lab in zip(axes, horizons, labels):
     r_h = np.sqrt(np.mean((p - t)**2))
     ax.fill_between(range(n_show), lo, hi, alpha=0.15, color='steelblue', label='80% CI')
     ax.plot(t, 'b-', lw=1.2, alpha=0.85, label='Actual')
-    ax.plot(p, 'r-', lw=1.2, alpha=0.85, label=f'LNN-Mamba (RMSE={r_h:.3f})')
+    ax.plot(p, 'r-', lw=1.2, alpha=0.85, label=f'LNN-Gated Selective SSM (RMSE={r_h:.3f})')
     ax.set_ylabel('Power (norm)')
     ax.set_title(f'Horizon {lab}  |  Zone 1  |  ECMWF NWP Weather Input')
     ax.legend(loc='upper right', fontsize=9, ncol=3)
@@ -116,11 +116,11 @@ ax.fill_between(range(n_show), p_l, p_h, alpha=0.18, color='steelblue', label='1
 ax.fill_between(range(n_show), p25[start:start+n_show,5], p75[start:start+n_show,5],
                 alpha=0.25, color='steelblue', label='25-75% interval')
 ax.plot(t, 'b-', lw=1.5, alpha=0.9, label='Actual Power', zorder=10)
-ax.plot(p_m, 'r-', lw=1.5, alpha=0.9, label='LNN-Mamba Median', zorder=9)
+ax.plot(p_m, 'r-', lw=1.5, alpha=0.9, label='LNN-Gated Selective SSM Median', zorder=9)
 
 # Count actuals within 90% CI
 in_ci = np.sum((t >= p_l) & (t <= p_h))
-ax.set_title(f'LNN-Mamba Probabilistic Forecast (+6h) | Zone 1 | '
+ax.set_title(f'LNN-Gated Selective SSM Probabilistic Forecast (+6h) | Zone 1 | '
              f'{in_ci}/{n_show} in 80% CI ({in_ci/n_show*100:.0f}%) | '
              f'RMSE={np.sqrt(np.mean((p_m-t)**2)):.3f}')
 ax.set_xlabel('Time step (hours)'); ax.set_ylabel('Normalized Power')
@@ -135,7 +135,7 @@ fig, ax = plt.subplots(figsize=(7, 7))
 hb = ax.hexbin(tf_all, pf_all, gridsize=40, cmap='Blues', mincnt=1, alpha=0.85)
 mx = max(tf_all.max(), pf_all.max())
 ax.plot([0, mx], [0, mx], 'k--', lw=1, alpha=0.5, label='Perfect')
-ax.text(0.05, 0.95, f'LNN-Mamba (Median)\nRMSE={rmse:.3f}\nMAE={mae:.3f}\nR2={r2:.3f}',
+ax.text(0.05, 0.95, f'LNN-Gated Selective SSM (Median)\nRMSE={rmse:.3f}\nMAE={mae:.3f}\nR2={r2:.3f}',
         transform=ax.transAxes, fontsize=11, va='top',
         bbox=dict(boxstyle='round', facecolor='white', alpha=0.85), fontfamily='monospace')
 ax.set_xlabel('Actual Power'); ax.set_ylabel('Predicted Power')

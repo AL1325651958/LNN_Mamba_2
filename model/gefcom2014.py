@@ -5,7 +5,7 @@ Data: 10 zones, hourly, Jan 2012 - Nov 2013 train, Dec 2013 test.
 Features: U10, V10, U100, V100 (ECMWF NWP wind components)
 Target: TARGETVAR (normalized wind power)
 
-Models: Persistence → GRU → Mamba → LNN-Mamba
+Models: Persistence → GRU → Mamba → LNN-Gated Selective SSM
 """
 import sys,os,glob,zipfile,time,argparse,io,math
 import numpy as np
@@ -240,7 +240,7 @@ def main():
     configs = [
         ('GRU',         GRUModel(n_vars, d=128, nl=2, pred=PRED)),
         ('Mamba',       LNNMambaModel(n_vars, d=args.d_model, nb=2, ds=16, pred=PRED, use_lnn=False)),
-        ('LNN-Mamba',   LNNMambaModel(n_vars, d=args.d_model, nb=2, ds=16, pred=PRED, use_lnn=True)),
+        ('LNN-Gated Selective SSM',   LNNMambaModel(n_vars, d=args.d_model, nb=2, ds=16, pred=PRED, use_lnn=True)),
     ]
 
     for name, model in configs:
@@ -272,9 +272,9 @@ def main():
 
     # Per-horizon
     print(f'\n{"Per-horizon RMSE":-^70}')
-    print(f'{"Hour":>8s} {"Persist":>10s} {"GRU":>10s} {"Mamba":>10s} {"LNN-Mamba":>10s}')
+    print(f'{"Hour":>8s} {"Persist":>10s} {"GRU":>10s} {"Mamba":>10s} {"LNN-Gated Selective SSM":>10s}')
     for h in [0,3,5,11,17,23]:
-        print(f'+{h+1:2d}h     {pm["rmse_h"][h]:>10.4f} {results["GRU"]["rmse_h"][h]:>10.4f} {results["Mamba"]["rmse_h"][h]:>10.4f} {results["LNN-Mamba"]["rmse_h"][h]:>10.4f}')
+        print(f'+{h+1:2d}h     {pm["rmse_h"][h]:>10.4f} {results["GRU"]["rmse_h"][h]:>10.4f} {results["Mamba"]["rmse_h"][h]:>10.4f} {results["LNN-Gated Selective SSM"]["rmse_h"][h]:>10.4f}')
 
     # ── Plots ──
     os.makedirs('plots', exist_ok=True)
@@ -285,7 +285,7 @@ def main():
     ax.plot(hh, pm['rmse_h'], 'k-', lw=2, label=f'Persistence')
     ax.plot(hh, results['GRU']['rmse_h'], 'b-', lw=1.5, alpha=0.8, label=f'GRU')
     ax.plot(hh, results['Mamba']['rmse_h'], 'g-', lw=1.5, alpha=0.8, label=f'Mamba')
-    ax.plot(hh, results['LNN-Mamba']['rmse_h'], 'r-', lw=2, label=f'LNN-Mamba')
+    ax.plot(hh, results['LNN-Gated Selective SSM']['rmse_h'], 'r-', lw=2, label=f'LNN-Gated Selective SSM')
     ax.set_xlabel('Horizon (hours)'); ax.set_ylabel('RMSE (normalized power)')
     ax.set_title(f'GEFCom2014 Zone {args.zone} | {SEQ}h → {PRED}h forecast')
     ax.legend(); ax.grid(alpha=0.2)

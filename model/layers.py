@@ -1,5 +1,5 @@
 """
-Core layers for LNN-Mamba-Transformer (LMT) wind power forecasting model.
+Core layers for LNN-Gated Selective SSM-Transformer (LMT) wind power forecasting model.
 
 Novelty:
   1. Mamba2SSMBlock — Selective SSM temporal encoder per variable
@@ -17,7 +17,7 @@ from einops import rearrange, repeat
 
 
 # ============================================================
-# 1. Mamba-2 SSM Block (Pure PyTorch — no CUDA kernel dependency)
+# 1. Liquid-Gated Selective SSM Block (Pure PyTorch — no CUDA kernel dependency)
 # ============================================================
 
 class Mamba2SSMBlock(nn.Module):

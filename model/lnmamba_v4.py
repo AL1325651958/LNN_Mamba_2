@@ -1,4 +1,4 @@
-"""LNMamba v4 — Parallel-scan Mamba + Multiscale + LNN + CRPS + 10-zone."""
+"""LNMamba v4 — Parallel-scan Selective SSM + Multiscale + LNN + CRPS + 10-zone."""
 import sys,os,zipfile,time,numpy as np
 import torch, torch.nn as nn, torch.nn.functional as F
 import pandas as pd

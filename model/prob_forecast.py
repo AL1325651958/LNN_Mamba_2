@@ -77,7 +77,7 @@ class ProbDS(Dataset):
 
 # ═══════════════════ Components ═══════════════════
 class MambaSSM(nn.Module):
-    """Fast Mamba-2 SSM block."""
+    """Fast Liquid-Gated Selective SSM block."""
     def __init__(self, d, ds=16, dc=4, ex=2):
         super().__init__()
         di = d*ex; self.ds = ds
@@ -127,7 +127,7 @@ class QuantileDecoder(nn.Module):
 
 
 class LNNMambaProb(nn.Module):
-    """LNN-Mamba for probabilistic forecasting."""
+    """LNN-Gated Selective SSM for probabilistic forecasting."""
     def __init__(self, V, d=64, nb=2, ds=16, pred=24, nq=99, use_lnn=True):
         super().__init__()
         self.use_lnn = use_lnn
@@ -350,7 +350,7 @@ def main():
         configs = [
             ('GRU', QuantileGRU(n_vars, d=128, nl=2, pred=args.pred).to(device)),
             ('Mamba', LNNMambaProb(n_vars, d=args.d_model, nb=2, ds=16, pred=args.pred, use_lnn=False).to(device)),
-            ('LNN-Mamba', LNNMambaProb(n_vars, d=args.d_model, nb=2, ds=16, pred=args.pred, use_lnn=True).to(device)),
+            ('LNN-Gated Selective SSM', LNNMambaProb(n_vars, d=args.d_model, nb=2, ds=16, pred=args.pred, use_lnn=True).to(device)),
         ]
 
         zone_results = {}
@@ -366,7 +366,7 @@ def main():
             print(f'  Test pinball: {test_pb:.4f} (vs persist: {imp:+.1f}%)')
 
             # Plot for best model
-            if name == 'LNN-Mamba':
+            if name == 'LNN-Gated Selective SSM':
                 plot_probabilistic(test_pr, test_tr, zone, args.seq, args.pred)
 
         all_results[zone] = {'persistence': p_pinball, **zone_results}
@@ -381,7 +381,7 @@ def main():
         r = all_results[zone]
         print(f'\nZone {zone}:')
         print(f'  {"Persistence":<15s}: {r["persistence"]:.4f}')
-        for name in ['GRU', 'Mamba', 'LNN-Mamba']:
+        for name in ['GRU', 'Mamba', 'LNN-Gated Selective SSM']:
             if name in r:
                 print(f'  {name:<15s}: {r[name]["pinball"]:.4f} ({r[name]["imp"]:+.1f}%)')
 
@@ -389,7 +389,7 @@ def main():
     avg_p = np.mean([all_results[z]['persistence'] for z in zones])
     print(f'\n{"Average":-^80}')
     print(f'{"Persistence":<15s}: {avg_p:.4f}')
-    for name in ['GRU', 'Mamba', 'LNN-Mamba']:
+    for name in ['GRU', 'Mamba', 'LNN-Gated Selective SSM']:
         avg_v = np.mean([all_results[z][name]['pinball'] for z in zones if name in all_results[z]])
         avg_i = (avg_p - avg_v) / avg_p * 100
         print(f'{name:<15s}: {avg_v:.4f} ({avg_i:+.1f}%)')

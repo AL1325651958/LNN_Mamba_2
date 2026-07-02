@@ -577,7 +577,7 @@ def fig6_error_dist(pr, tr):
 
 
 # ═══════════════════════════════════════
-# FIGURE 7: SOTA Comparison — QRF vs LNMamba vs Persistence
+# FIGURE 7: SOTA Comparison — QRF vs LNSelective SSM vs Persistence
 # ═══════════════════════════════════════
 def fig7_sota_comparison():
     """Bar chart: Pinball / RMSE / R² across models."""
@@ -655,7 +655,7 @@ def fig8_scale_effect():
     ax.grid(True, alpha=0.15, lw=0.3)
 
     # DM test annotation box
-    ax.text(0.97, 0.97, 'DM test: LNMamba vs Persistence\nDM = +12.432  p < 0.0001\n23/24 horizons significant',
+    ax.text(0.97, 0.97, 'DM test: LNSelective SSM vs Persistence\nDM = +12.432  p < 0.0001\n23/24 horizons significant',
             transform=ax.transAxes, fontsize=9, ha='right', va='top', fontfamily='monospace',
             bbox=dict(boxstyle='round,pad=0.5', facecolor='lightyellow', alpha=0.85, edgecolor='orange', lw=0.8))
 

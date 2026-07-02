@@ -307,7 +307,7 @@ mae_h  = [np.mean(np.abs(p50[:, h][target_mw[:, h] > 0.001] - target_mw[:, h][ta
 # ═══════════════════════════════════════
 print('\n' + '=' * 75)
 print('  COMPREHENSIVE EVALUATION — LNMamba v1 on GEFCom2014 Zone 1')
-print('  Model: 396K params, LNN + Mamba SSM, ECMWF NWP features')
+print('  Model: 396K params, LNN + Selective SSM, ECMWF NWP features')
 print('  Horizon: 24h ahead, 99 quantiles (0.01-0.99)')
 print('=' * 75)
 

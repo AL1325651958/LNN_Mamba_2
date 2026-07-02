@@ -1,5 +1,5 @@
 """
-LMT v2 — Multi-Scale LNN-Mamba-Transformer with ΔP prediction & weighted loss.
+LMT v2 — Multi-Scale LNN-Gated Selective SSM-Transformer with ΔP prediction & weighted loss.
 
 4 simultaneous improvements over v1:
   1. Multi-scale decomposition → separate Mamba channels per frequency band
@@ -48,7 +48,7 @@ class MultiScaleDecomp(nn.Module):
 
 
 # ═══════════════════════════════════════════════════════════
-# 2. Mamba-2 SSM Block (kept from v1, optimized)
+# 2. Liquid-Gated Selective SSM Block (kept from v1, optimized)
 # ═══════════════════════════════════════════════════════════
 
 class Mamba2Block(nn.Module):

@@ -73,7 +73,7 @@ def normalize_and_window(df, stride=6):
 from nwp_model import NWPMamba, pinball_loss
 # Use v1 architecture but double d_model for extra capacity with more data
 class BigMamba(nn.Module):
-    """Scaled-up LNN-Mamba: d=96, ds=24, nb=3."""
+    """Scaled-up LNN-Gated Selective SSM: d=96, ds=24, nb=3."""
     def __init__(self, V, d=96, nb=3, ds=24, pred=24, nq=99, dropout=0.1):
         super().__init__()
         self.pred_len = pred; self.nq = nq

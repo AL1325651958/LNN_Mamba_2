@@ -1,5 +1,5 @@
 """
-Clean training: GRU baseline vs LNN-Mamba.
+Clean training: GRU baseline vs LNN-Gated Selective SSM.
 Single site, stride=1, fast iteration.
 """
 import sys,os,glob,time,numpy as np
@@ -178,16 +178,16 @@ def main():
                           pred_len=PRED, use_lnn=False, use_spectral=False).to(device)
     mamba, mb_best, mb_hist = train_model(mamba, tl, vl, device, epochs=50, lr=1e-3, label='mamba')
 
-    # ── 3. Mamba + Spectral ──
+    # ── 3. Selective SSM + Spectral ──
     print('\n' + '='*60)
-    print('EXPERIMENT 3: Mamba + Spectral Loss')
+    print('EXPERIMENT 3: Selective SSM + Spectral Loss')
     mspec = CleanLNNMamba(n_vars=n_vars, d_model=64, n_blocks=2, d_state=16,
                           pred_len=PRED, use_lnn=False, use_spectral=True).to(device)
     mspec, ms_best, ms_hist = train_model(mspec, tl, vl, device, epochs=50, lr=1e-3, label='mb_spec')
 
-    # ── 4. Full LNN-Mamba ──
+    # ── 4. Full LNN-Gated Selective SSM ──
     print('\n' + '='*60)
-    print('EXPERIMENT 4: LNN-Mamba + Spectral')
+    print('EXPERIMENT 4: LNN-Gated Selective SSM + Spectral')
     full = CleanLNNMamba(n_vars=n_vars, d_model=64, n_blocks=2, d_state=16,
                          pred_len=PRED, use_lnn=True, use_spectral=True).to(device)
     full, full_best, full_hist = train_model(full, tl, vl, device, epochs=50, lr=1e-3, label='lnn_mamba')
@@ -197,7 +197,7 @@ def main():
     print('FINAL TEST COMPARISON')
     print('='*60)
 
-    for name, model in [('GRU', gru), ('Mamba', mamba), ('Mamba+Spectral', mspec), ('LNN-Mamba', full)]:
+    for name, model in [('GRU', gru), ('Mamba', mamba), ('Mamba+Spectral', mspec), ('LNN-Gated Selective SSM', full)]:
         test_m = evaluate(model, testl, device)
         print(f'\n{name:20s} | RMSE={test_m["rmse"]:.4f} | MAE={test_m["mae"]:.4f} | '
               f'MAPE={test_m["mape"]:.1f}% | R2={test_m["r2"]:.3f}')
@@ -215,7 +215,7 @@ def main():
     pr = np.concatenate(preds)  # (N, 24)
     tr = np.concatenate(targs)
 
-    print('\nLNN-Mamba per-horizon RMSE:')
+    print('\nLNN-Gated Selective SSM per-horizon RMSE:')
     for h in range(0, PRED, 4):
         r = np.sqrt(np.mean((pr[:, h] - tr[:, h]) ** 2))
         print(f'  +{(h+1)*15:3d}min: {r:.4f}')
@@ -225,7 +225,7 @@ def main():
              gru_rmse=float(results['GRU']['rmse']),
              mamba_rmse=float(results['Mamba']['rmse']),
              mspec_rmse=float(results['Mamba+Spectral']['rmse']),
-             full_rmse=float(results['LNN-Mamba']['rmse']),
+             full_rmse=float(results['LNN-Gated Selective SSM']['rmse']),
              full_pred=pr, full_target=tr)
     print('\nResults saved to checkpoints/clean_results.npz')
 

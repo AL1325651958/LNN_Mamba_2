@@ -1,5 +1,5 @@
 """
-LNN-Mamba-Transformer (LMT) — Full Architecture for Wind Power Forecasting
+LNN-Gated Selective SSM-Transformer (LMT) — Full Architecture for Wind Power Forecasting
 
 Architecture:
 ┌─────────────────────────────────────────────────────────┐

@@ -1,4 +1,7 @@
 """Quick training + PICP/PINAW evaluation for GEFCom2012."""
+import io, sys
+# Fix Unicode on Windows GBK console
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 import sys,os,time,numpy as np
 import torch
 import pandas as pd
